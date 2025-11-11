@@ -1030,9 +1030,11 @@
                     loadUserSettings(username); // This loads from localStorage or creates new
                 }
             } catch (e) {
+                showLoader(false);
                 // 3. Fetch failed (e.g., offline), fall back to localStorage
                 console.warn("Fetch failed, loading from localStorage.", e);
                 loadUserSettings(username); // This loads from localStorage or creates new
+
             } finally {
                 showLoader(false);
                 currentUsername = username;
