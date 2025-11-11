@@ -1006,7 +1006,7 @@
             showLoader(true);
             try {
                 // 1. Try to fetch remote settings
-                const response = await fetch(`/user/${username}.json`);
+                const response = await fetch(`/users/${username}.json`);
                 if (response.ok) {
                     console.log("Fetched remote user settings.");
                     const fetchedSettings = await response.json();
