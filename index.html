@@ -106,18 +106,16 @@
             height: 100vh;
             overflow-y: auto;
             overflow-x: hidden;
-            padding-top: 4rem; /* Add padding for global header */
-        }
-        #page-player {
-             padding-top: 0; /* Player page is fullscreen */
+            /* padding-top is now page-specific */
         }
         
-        .page-header {
-            position: sticky; /* Use sticky for headers */
-            top: 4rem; /* 16px * 4 = 64px, for global header */
-            left: 0;
-            right: 0;
-            z-index: 10;
+        /* Add padding for pages that need it to clear the global header */
+        .page-with-padding {
+            padding-top: 4rem;
+        }
+
+        #page-player {
+             padding-top: 0; /* Player page is fullscreen */
         }
 
         @keyframes fadeIn {
@@ -215,16 +213,17 @@
 
         <!-- ===== Global Header ===== -->
         <div id="global-header" class="fixed top-0 left-0 right-0 h-16 bg-alt flex items-center justify-between px-4 z-20 shadow-lg">
-            <!-- Left Slot (empty for main menu) -->
+            <!-- Left Slot: Back Button -->
             <div class="w-1/3">
-                <!-- Back button can be added here later if needed -->
+                <button id="global-back-button" onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
             </div>
             
-            <!-- Center Slot: Time -->
+            <!-- Center Slot: Time / Title -->
             <div class="w-1/3 text-center">
-                <div id="current-time" class="text-lg font-semibold text-main">
-                    --:--
-                </div>
+                <div id="current-time" class="text-lg font-semibold text-main">--:--</div>
+                <h2 id="global-header-title" class="text-2xl font-bold text-main hidden truncate">Page Title</h2>
             </div>
 
             <!-- Right Slot: Settings -->
@@ -234,9 +233,6 @@
                 </button>
             </div>
         </div>
-
-        <!-- Current Time Display -->
-        <!-- MOVED to global-header -->
 
         <!-- ===== PAGE: USER LOGIN ===== -->
         <div id="page-user-login" class="page flex items-center justify-center p-4">
@@ -256,7 +252,7 @@
         </div>
         
         <!-- ===== PAGE: API DETAILS (was LOGIN) ===== -->
-        <div id="page-api-details" class="page flex items-center justify-center p-4">
+        <div id="page-api-details" class="page flex items-center justify-center p-10 pt-20">
             <div class="w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl bg-alt">
                 <h1 class="text-3xl font-bold text-center text-main">Connect API</h1>
                 <p class="text-center text-alt">Enter your Xtream Codes API details for user <b id="api-username" class="text-primary"></b></p>
@@ -281,10 +277,8 @@
         </div>
 
         <!-- ===== PAGE: MAIN MENU ===== -->
-        <div id="page-main" class="page flex items-center justify-center p-4">
-            <!-- Settings Button -->
-            <!-- MOVED to global-header -->
-            
+        <!-- This page intentionally does NOT have .page-with-padding, so flex centering works perfectly -->
+        <div id="page-main" class="page flex items-center justify-center  p-10 pt-20">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
                 <button onclick="loadCategories('live')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 5h8a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" /></svg>
@@ -302,26 +296,16 @@
         </div>
 
         <!-- ===== PAGE: CATEGORIES ===== -->
-        <div id="page-categories" class="page p-4">
-            <header class="page-header p-4 flex items-center bg-alt shadow-lg">
-                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 id="categories-title" class="ml-4 text-2xl font-bold">Categories</h2>
-            </header>
+        <div id="page-categories" class="page page-with-padding  p-10 pt-20">
+            <!-- Header removed -->
             <div id="category-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                 <!-- Categories will be injected here -->
             </div>
         </div>
 
         <!-- ===== PAGE: CONTENT (MOVIES/SERIES) ===== -->
-        <div id="page-content" class="page p-4">
-            <header class="page-header p-4 flex items-center bg-alt shadow-lg">
-                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 id="content-title" class="ml-4 text-2xl font-bold">Content</h2>
-            </header>
+        <div id="page-content" class="page page-with-padding  p-10 pt-20">
+            <!-- Header removed -->
             <!-- Grid for Posters -->
             <div id="content-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                 <!-- Movie/Series posters will be injected here -->
@@ -329,20 +313,21 @@
         </div>
         
         <!-- ===== PAGE: SERIES DETAILS (NEW) ===== -->
-        <div id="page-series-details" class="page p-4">
-             <header class="page-header p-4 flex items-center bg-alt shadow-lg">
-                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 class="ml-4 text-2xl font-bold">Series Details</h2>
-            </header>
+        <div id="page-series-details" class="page  page-with-padding  p-10 pt-20">
+             <!-- Header removed -->
             
-            <div class="flex flex-col md:flex-row gap-8 p-4 md:p-8">
+            <div class="flex flex-col md:flex-row gap-8  md:p-8">
                 <!-- Left Column: Info -->
                 <div class="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
                     <img id="series-cover-image" src="https://placehold.co/400x600/374151/FFFFFF?text=Loading..." alt="Series Cover" class="w-full rounded-lg shadow-xl object-cover aspect-[2/3]">
                     <h1 id="series-title" class="text-3xl font-bold text-main mt-4">Series Title</h1>
-                    <p id="series-year" class="text-lg text-alt">Year</p>
+                    <div class="flex items-center gap-4 mt-2">
+                        <p id="series-year" class="text-lg text-alt">Year</p>
+                        <!-- NEW FAVORITE BUTTON -->
+                        <button id="series-fav-button" class="nav-item-sm p-2 rounded-full bg-card text-main">
+                            <!-- Heart icon will be injected by JS -->
+                        </button>
+                    </div>
                     <p id="series-plot" class="text-sm text-alt mt-4">Plot description will load here...</p>
                 </div>
                 
@@ -362,13 +347,8 @@
         </div>
         
         <!-- ===== PAGE: SETTINGS ===== -->
-        <div id="page-settings" class="page p-4">
-             <header class="page-header p-4 flex items-center bg-alt shadow-lg">
-                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 class="ml-4 text-2xl font-bold">Settings</h2>
-            </header>
+        <div id="page-settings" class="pagepage-with-padding  p-10 pt-20">
+             <!-- Header removed -->
             <div class="p-4 max-w-2xl mx-auto space-y-6">
                 <!-- Theme Settings -->
                 <div>
@@ -468,6 +448,10 @@
                     <button id="modal-close-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-alt text-main hover:bg-opacity-80 transition-colors">
                         Close
                     </button>
+                    <!-- NEW FAVORITE BUTTON -->
+                    <button id="modal-fav-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors ml-auto">
+                        <!-- Heart icon will be injected by JS -->
+                    </button>
                 </div>
             </div>
         </div>
@@ -500,6 +484,7 @@
         let saveProgressInterval;
         let lastFocusedElement = null; // For restoring focus after modal
         let clockInterval;
+        let initialHash = ''; // <-- NEW: For routing on refresh
 
         // === DOM Elements ===
         const $ = (selector) => document.querySelector(selector);
@@ -508,6 +493,16 @@
         // === Initialization ===
         document.addEventListener('DOMContentLoaded', () => {
             console.log("App initializing...");
+            
+            // --- NEW: HASH HANDLING ON LOAD ---
+            initialHash = location.hash;
+            if (initialHash) {
+                console.log("Initial hash detected:", initialHash);
+                // Clean the URL bar so refreshes don't stack hashes or cause issues
+                history.replaceState(null, '', 'player.html');
+            }
+            // --- END HASH HANDLING ---
+
             detectTizen();
             setupKeyListeners();
             setupEventListeners();
@@ -744,13 +739,33 @@
 
         // === Navigation ===
         function showPage(pageId) {
-            // Show/Hide global header
+            // Manage Global Header state
             const globalHeader = $('#global-header');
+            const globalBackButton = $('#global-back-button');
+            const globalTitle = $('#global-header-title');
+            const globalTime = $('#current-time');
+
+            // Default state (for main menu)
+            globalBackButton.style.display = 'none';
+            globalTitle.style.display = 'none';
+            globalTime.style.display = 'block';
+
             if (pageId === 'page-player') {
                 globalHeader.style.display = 'none';
+            } else if (pageId === 'page-user-login' || pageId === 'page-api-details') {
+                // Hide header for login pages
+                globalHeader.style.display = 'none';
+            } else if (pageId === 'page-main') {
+                globalHeader.style.display = 'flex'; // Show header
+                // Default state is already set for main menu
             } else {
+                // For all other pages (categories, content, settings, etc.)
                 globalHeader.style.display = 'flex';
+                globalBackButton.style.display = 'block';
+                globalTitle.style.display = 'block';
+                globalTime.style.display = 'none';
             }
+
 
             $$('.page').forEach(page => page.style.display = 'none');
             const targetPage = $(`#${pageId}`);
@@ -776,11 +791,14 @@
                 return;
             }
             navigationStack.push({ pageId, context });
+            
+            updateHashFromState({ pageId, context }); // <-- SYNC URL HASH
         }
         
         function showSettingsPage() {
             pushToNavStack($$('.page[style*="block"]')[0].id); // Save current page
             $('#setting-username').textContent = currentUsername;
+            $('#global-header-title').textContent = 'Settings';
             showPage('page-settings');
             pushToNavStack('page-settings');
         }
@@ -802,6 +820,14 @@
             const lastState = navigationStack[navigationStack.length - 1];
             if (lastState) {
                 showPage(lastState.pageId);
+                // Update title based on the page we're going *back* to
+                // This will be re-set by load functions, but good for immediate feedback
+                if(lastState.pageId === 'page-categories') {
+                    $('#global-header-title').textContent = 'Categories';
+                } else if (lastState.pageId === 'page-content') {
+                     $('#global-header-title').textContent = 'Content';
+                } // etc. The load functions will correct this.
+
                 // After showing, re-focus the correct element
                 setTimeout(() => {
                     let firstItem;
@@ -814,6 +840,8 @@
                     }
                     if (firstItem) firstItem.focus();
                 }, 100);
+                
+                updateHashFromState(lastState); // <-- SYNC URL HASH
             }
         }
 
@@ -846,6 +874,64 @@
         function saveUserSettings() {
             if (!currentUsername) return;
             localStorage.setItem(`iptv-user-${currentUsername}`, JSON.stringify(userSettings));
+        }
+
+        // NEW: Function to update the URL hash based on app state
+        function updateHashFromState(state) {
+            if (!state) state = navigationStack[navigationStack.length - 1]; // Get current state
+            if (!state) return; // No state
+
+            const { pageId, context } = state;
+            let hash = '';
+
+            try {
+                if (pageId === 'page-user-login') {
+                    hash = '#login';
+                } else if (pageId === 'page-main') {
+                    hash = '#main';
+                } else if (pageId === 'page-settings') {
+                    hash = '#settings';
+                } else if (pageId === 'page-categories') {
+                    hash = `#categories/${context.type}`; // e.g., #categories/vod
+                } else if (pageId === 'page-content') {
+                    const type = context.type === 'vod' ? 'movies' : context.type;
+                    hash = `#${type}/${context.categoryId}`; // e.g., #movies/all
+                } else if (pageId === 'page-series-details') {
+                    hash = `#series/${context.seriesItem.series_id}`; // e.g., #series/1234
+                } else if (pageId === 'page-player') {
+                    let playerHash = '#player';
+                    if (currentItem) {
+                        // Find category from *previous* stack item
+                        const lastState = navigationStack[navigationStack.length - 2];
+                        let catId = (lastState && lastState.context && lastState.context.categoryId) ? lastState.context.categoryId : 'all';
+                            
+                        if (currentEpisode) { // Series Episode
+                            // #series/catId/seriesId/episodeStreamId
+                            playerHash = `#series/${catId}/${currentItem.series_id}/${currentEpisode.stream_id}`;
+                        } else if (currentItem.stream_type === 'vod') { // Movie
+                            // #movies/catId/streamId
+                            playerHash = `#movies/${catId}/${currentItem.stream_id}`;
+                        } else if (currentItem.stream_type === 'live') { // Live
+                            // #live/catId/streamId
+                            playerHash = `#live/${catId}/${currentItem.stream_id}`;
+                        }
+                    }
+                    hash = playerHash;
+                } else {
+                    hash = `#${pageId}`; // Fallback
+                }
+            } catch (e) {
+                console.warn("Could not generate hash:", e);
+                hash = "#error";
+            }
+
+            // Use replaceState to update URL without adding a new browser history entry
+            // This keeps your navigationStack as the source of truth.
+            if (hash && location.hash !== hash) {
+                // Use history.pushState to allow browser back button to work with our goBack()
+                // NOTE: We will use replaceState to keep our own stack master.
+                history.replaceState(null, '', hash);
+            }
         }
 
         function loadUserSettings(username) {
@@ -902,6 +988,7 @@
             userSettings = { ...defaultUserSettings };
             navigationStack = [];
             showPage('page-user-login');
+            history.replaceState(null, '', '#login'); // Update hash on logout
         }
 
         // === API Handling ===
@@ -940,9 +1027,24 @@
                     userSettings.xtreamConfig = config; // Save config
                     saveUserSettings();
                     
-                    showPage('page-main');
-                    navigationStack = []; // Reset stack
-                    pushToNavStack('page-main');
+                    // --- NEW ROUTING LOGIC ---
+                    // Check if we have a deep link hash to handle from page load
+                    if (initialHash && initialHash !== '#main' && initialHash !== '#login' && initialHash !== '#') {
+                        const handled = await handleInitialHash(initialHash); // Make it async
+                        if (!handled) {
+                            // If routing failed, go to main
+                            console.warn("Failed to handle hash, defaulting to main.");
+                            showPage('page-main');
+                            pushToNavStack('page-main');
+                        }
+                    } else {
+                        // No hash, just go to main
+                        showPage('page-main');
+                        pushToNavStack('page-main');
+                    }
+                    initialHash = ''; // Clear the hash, it has been handled
+                    // --- END NEW LOGIC ---
+
                 } else {
                     throw new Error("Authentication failed or empty response.");
                 }
@@ -959,6 +1061,147 @@
                 showPage('page-api-details');
             }
         }
+
+        // NEW: Handles routing from a hash on page load
+        async function handleInitialHash(hash) {
+            console.log("Handling initial hash:", hash);
+            try {
+                const parts = hash.substring(1).split('/'); // Remove # and split
+                const page = parts[0];
+                const id1 = parts[1]; // categoryId or series_id
+                const id2 = parts[2]; // stream_id or series_id
+                const id3 = parts[3]; // episode_stream_id
+
+                if (!page) return false;
+
+                switch (page) {
+                    case 'main':
+                        showPage('page-main');
+                        pushToNavStack('page-main');
+                        return true;
+                    
+                    case 'settings':
+                        showSettingsPage(); // This already handles nav stack
+                        return true;
+                    
+                    case 'categories':
+                        // #categories/vod
+                        if (id1) {
+                            await loadCategories(id1); // This is async
+                            return true;
+                        }
+                        break;
+                    
+                    case 'movies':
+                    case 'series':
+                    case 'live':
+                        const type = (page === 'movies') ? 'vod' : page; // 'vod', 'series', 'live'
+
+                        if (id1 && !id2) {
+                            // Case 1: Content List (#movies/187) or Series Details (#series/1234)
+                            if (type === 'series') {
+                                // This is #series/1234 (Series Details)
+                                showLoader(true);
+                                // We don't have the full 'item', so we create a minimal one.
+                                // loadSeriesInfo will fetch the rest.
+                                const minimalSeriesItem = { series_id: id1, name: 'Loading...' };
+                                await loadSeriesInfo(minimalSeriesItem); // This is async
+                                showLoader(false);
+                                return true;
+                            } else {
+                                // This is #movies/187 or #live/187 (Content List)
+                                // We need the category name, but don't have it.
+                                const categoryName = `Category ${id1}`;
+                                await loadContent(type, id1, categoryName, {}); // This is async
+                                return true;
+                            }
+                        } else if (id1 && id2 && !id3) {
+                            // Case 2: Movie Player (#movies/187/45) or Live Player (#live/187/45)
+                            const stream_id = id2;
+                            showLoader(true);
+                            
+                            if(type === 'vod') {
+                                const info = await fetchXtream({ action: 'get_vod_info', vod_id: stream_id });
+                                if (info && info.movie_data) {
+                                    // Reconstruct a minimal 'item' for handleMovieClick
+                                    const item = {
+                                        stream_id: info.movie_data.stream_id,
+                                        name: info.info.name,
+                                        rating: info.info.rating_5based,
+                                        movie_image: info.info.movie_image,
+                                        stream_type: 'vod'
+                                    };
+                                    // Build fake nav stack
+                                    pushToNavStack('page-main'); // So back button works
+                                    pushToNavStack('page-content', { type: 'vod', categoryId: id1, categoryName: `Category ${id1}` });
+                                    playMovie(item, 0, info); // This will show player and push nav stack
+                                    showLoader(false);
+                                    return true;
+                                }
+                            } else if (type === 'live') {
+                                // Can't get single live stream info. Play directly.
+                                const item = { stream_id: stream_id, name: "Live Stream", stream_type: 'live' };
+                                pushToNavStack('page-main'); // So back button works
+                                pushToNavStack('page-content', { type: 'live', categoryId: id1, categoryName: `Category ${id1}` });
+                                playLive(item); // This pushes 'page-player'
+                                showLoader(false);
+                                return true;
+                            }
+
+                        } else if (id1 && id2 && id3) {
+                            // Case 3: Series Player (#series/187/1234/5678)
+                            // catId: id1, series_id: id2, episode_stream_id: id3
+                            if (type === 'series') {
+                                showLoader(true);
+                                // We need:
+                                // 1. The series item (for series_id: id2)
+                                // 2. The episode item (for stream_id: id3)
+                                
+                                const seriesInfo = await fetchXtream({ action: 'get_series_info', series_id: id2 });
+                                if (seriesInfo) {
+                                    const minimalSeriesItem = { 
+                                        series_id: id2, 
+                                        name: seriesInfo.info.name, 
+                                        cover: seriesInfo.info.cover,
+                                        rating: seriesInfo.info.rating
+                                    };
+                                    
+                                    // Now find the episode
+                                    let targetEpisode = null;
+                                    for (const seasonNum in seriesInfo.episodes) {
+                                        const found = seriesInfo.episodes[seasonNum].find(ep => ep.stream_id == id3);
+                                        if (found) {
+                                            targetEpisode = found;
+                                            break;
+                                        }
+                                    }
+
+                                    if (targetEpisode) {
+                                        // We're about to play, so build the nav stack
+                                        pushToNavStack('page-main'); // So back button works
+                                        pushToNavStack('page-content', { type: 'series', categoryId: id1, categoryName: `Category ${id1}` });
+                                        pushToNavStack('page-series-details', { seriesItem: minimalSeriesItem });
+                                        playEpisode(targetEpisode, minimalSeriesItem, 0); // This pushes 'page-player'
+                                        showLoader(false);
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                // Fallback if no route matched
+                showLoader(false);
+                return false;
+
+            } catch (e) {
+                console.error("Error during hash routing:", e);
+                showLoader(false);
+                return false;
+            }
+        }
+
 
         async function fetchXtream(params) {
             showLoader(true);
@@ -1111,7 +1354,7 @@
 
             const categories = await fetchXtream({ action });
             if (categories && Array.isArray(categories)) {
-                $('#categories-title').textContent = title;
+                $('#global-header-title').textContent = title;
                 const grid = $('#category-grid');
                 grid.innerHTML = ''; // Clear old
                 
@@ -1158,6 +1401,7 @@
             card.className = 'nav-item p-6 rounded-lg bg-card text-center cursor-pointer transition-all hover:bg-opacity-80';
             card.innerHTML = `<h3 class="text-lg font-bold text-main">${name}</h3>`;
             card.onclick = () => loadContent(type, id, name, context);
+            card.setAttribute('tabindex', '0'); // <-- MAKE DIV FOCUSABLE
             return card;
         }
         
@@ -1190,7 +1434,7 @@
             }
 
             if (items && Array.isArray(items)) {
-                $('#content-title').textContent = title;
+                $('#global-header-title').textContent = title;
                 const grid = $('#content-grid');
                 grid.innerHTML = '';
 
@@ -1220,6 +1464,7 @@
                     card.dataset.streamId = stream_id;
                     card.dataset.type = type;
                     card.dataset.item = JSON.stringify(item); // Store item data for fav/watch
+                    card.setAttribute('tabindex', '0'); // <-- MAKE DIV FOCUSABLE
                     
                     card.innerHTML = `
                         <div class="relative w-full h-full">
@@ -1295,10 +1540,32 @@
                 if (!info) throw new Error("Could not load series info.");
 
                 // 1. Populate Details
+                $('#global-header-title').textContent = info.info.name || seriesItem.name;
                 $('#series-cover-image').src = info.info.cover || seriesItem.cover || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
                 $('#series-title').textContent = info.info.name || seriesItem.name;
                 $('#series-plot').textContent = info.info.plot || 'No description available.';
                 $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
+
+                // --- NEW FAV BUTTON LOGIC ---
+                const seriesFavButton = $('#series-fav-button');
+                const seriesId = seriesItem.series_id;
+                
+                // Create a complete item from the available info to save to favorites
+                const fullSeriesItem = { ...seriesItem, ...info.info, series_id: seriesItem.series_id };
+
+                const updateSeriesFavIcon = () => {
+                    seriesFavButton.innerHTML = getHeartIcon(isFavorite(seriesId));
+                };
+
+                seriesFavButton.onclick = (e) => {
+                    e.stopPropagation();
+                    // Pass the full item so it can be saved for the favorites page
+                    toggleFavorite(seriesId, 'series', fullSeriesItem); 
+                    updateSeriesFavIcon(); // Update icon immediately
+                };
+                
+                updateSeriesFavIcon(); // Set initial state
+                // --- END NEW FAV BUTTON LOGIC ---
 
                 // 2. Populate Seasons
                 const seasonTabs = $('#series-seasons-tabs');
@@ -1453,9 +1720,29 @@
             $('#modal-movie-duration').textContent = info.info.duration || 'N/A';
             $('#modal-movie-rating-text').textContent = Number(info.info.rating_5based || item.rating || 0).toFixed(1);
             $('#modal-movie-plot').textContent = info.info.plot || 'No description available.';
-            $('#modal-movie-cast').textContent = info.info.cast || 'N/A';
+            $('#modal-movie-cast').textContent = info.info.cast || 'N/tA';
             $('#modal-movie-genre').textContent = info.info.genre || 'N/A';
             
+            // --- NEW FAV BUTTON LOGIC ---
+            const modalFavButton = $('#modal-fav-button');
+            const streamId = item.stream_id;
+            
+            // Create a complete item from the available info to save to favorites
+            const fullVodItem = { ...item, ...info.info, stream_id: item.stream_id, stream_type: 'vod' };
+
+            const updateModalFavIcon = () => {
+                modalFavButton.innerHTML = getHeartIcon(isFavorite(streamId));
+            };
+            
+            modalFavButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleFavorite(streamId, 'vod', fullVodItem);
+                updateModalFavIcon(); // Update icon immediately
+            };
+            
+            updateModalFavIcon(); // Set initial state
+            // --- END NEW FAV BUTTON LOGIC ---
+
             // Set up button actions
             $('#modal-play-button').onclick = () => {
                 hideMovieDetailsModal();
