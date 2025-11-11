@@ -1541,15 +1541,9 @@
                                 return false;
                             });
                             
-                        if (toWatchItems.length > 0) {
-                             grid.appendChild(createCategoryCard('To Watch', 'toWatch', type, { special: 'toWatch' }));
-                        }
                     }
                 }
                 
-                // 3. "All" Category
-                grid.appendChild(createCategoryCard('All', 'all', type));
-
                 // 4. API Categories
                 categories.forEach(cat => {
                     grid.appendChild(createCategoryCard(cat.category_name, cat.category_id, type));
