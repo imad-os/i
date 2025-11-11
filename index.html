@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tizen IPTV Player</title>
+    <!-- 1. Tailwind CSS for lightweight, utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 
+      2. Tizen WebAPI Script
+      This will only load on a real Tizen device.
+    -->
+    <script src="$WEBAPIS/webapis/webapis.js"></script>
+
+    <style>
+        /* 3. Custom CSS for Theming, Layouts, and Animations */
+        
+        /* Define color variables for theming. We start with the default dark theme. */
+        body {
+            /* Default Dark Theme */
+            --color-bg: #111827; /* gray-900 */
+            --color-bg-alt: #1F2937; /* gray-800 */
+            --color-card: #374151; /* gray-700 */
+            --color-text: #F9FAFB; /* gray-50 */
+            --color-text-alt: #D1D5DB; /* gray-300 */
+            --color-primary: #3B82F6; /* blue-500 */
+            --color-primary-hover: #2563EB; /* blue-600 */
+
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+            overflow: hidden; /* Prevent body scrolling */
+        }
+
+        /* Define the 5 theme classes */
+        .theme-default {
+            --color-bg: #111827;
+            --color-bg-alt: #1F2937;
+            --color-card: #374151;
+            --color-text: #F9FAFB;
+            --color-text-alt: #D1D5DB;
+            --color-primary: #3B82F6;
+            --color-primary-hover: #2563EB;
+        }
+
+        .theme-red {
+            --color-bg: #1f1212;
+            --color-bg-alt: #2c1a1a;
+            --color-card: #4a2a2a;
+            --color-text: #FEE2E2;
+            --color-text-alt: #FCA5A5;
+            --color-primary: #EF4444; /* red-500 */
+            --color-primary-hover: #DC2626; /* red-600 */
+        }
+        
+        .theme-green {
+            --color-bg: #0f1912;
+            --color-bg-alt: #1a2c1f;
+            --color-card: #2a4a31;
+            --color-text: #E0F2F1;
+            --color-text-alt: #A7F3D0;
+            --color-primary: #22C55E; /* green-500 */
+            --color-primary-hover: #16A34A; /* green-600 */
+        }
+
+        .theme-purple {
+            --color-bg: #16121f;
+            --color-bg-alt: #231a30;
+            --color-card: #3b2a54;
+            --color-text: #F3E8FF;
+            --color-text-alt: #DDD6FE;
+            --color-primary: #A855F7; /* purple-500 */
+            --color-primary-hover: #9333EA; /* purple-600 */
+        }
+
+        .theme-orange {
+            --color-bg: #1f150d;
+            --color-bg-alt: #30201a;
+            --color-card: #54352a;
+            --color-text: #FFF7ED;
+            --color-text-alt: #FDE68A;
+            --color-primary: #F97316; /* orange-500 */
+            --color-primary-hover: #EA580C; /* orange-600 */
+        }
+
+        /* Utility classes to apply theme colors */
+        .bg-main { background-color: var(--color-bg); }
+        .bg-alt { background-color: var(--color-bg-alt); }
+        .bg-card { background-color: var(--color-card); }
+        .text-main { color: var(--color-text); }
+        .text-alt { color: var(--color-text-alt); }
+        .bg-primary { background-color: var(--color-primary); }
+        .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
+        .border-primary { border-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .ring-primary:focus { --tw-ring-color: var(--color-primary); }
+        .fill-primary { fill: var(--color-primary); }
+        .fill-text { fill: var(--color-text); }
+
+        /* Page transition */
+        .page {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s ease-in-out;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-top: 4rem; /* Add padding for global header */
+        }
+        #page-player {
+             padding-top: 0; /* Player page is fullscreen */
+        }
+        
+        .page-header {
+            position: sticky; /* Use sticky for headers */
+            top: 4rem; /* 16px * 4 = 64px, for global header */
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Focus styles for Tizen D-pad navigation */
+        .nav-item {
+            transition: all 0.2s ease;
+            transform-origin: center;
+            border: 2px solid transparent;
+            border-radius: 0.5rem; /* Ensure this matches rounded-lg */
+        }
+        .nav-item:focus {
+            outline: none;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px 5px var(--color-primary);
+            border-color: var(--color-primary);
+        }
+        /* Special focus for small theme buttons */
+        .nav-item-sm:focus {
+             outline: none;
+            box-shadow: 0 0 10px 2px var(--color-primary);
+            border-color: var(--color-primary);
+        }
+        /* Style for active season tab */
+        .season-tab.active {
+            background-color: var(--color-primary);
+            color: var(--color-text);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg-alt);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 4px;
+        }
+
+        /* Loader */
+        .loader {
+            border: 4px solid var(--color-bg-alt);
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Player */
+        #page-player {
+            background: #000;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        #web-video-player, #tizen-player-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        /* The Tizen player object must be styled this way */
+        #av-player {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Watched Progress Bar */
+        .progress-bar {
+            height: 4px;
+            background-color: #555; /* Dim background */
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background-color: var(--color-primary);
+            transition: width 0.2s ease;
+        }
+    </style>
+</head>
+<body class="theme-default">
+
+    <!-- 4. App Container -->
+    <div id="app-container" class="w-full h-screen">
+
+        <!-- ===== Global Header ===== -->
+        <div id="global-header" class="fixed top-0 left-0 right-0 h-16 bg-alt flex items-center justify-between px-4 z-20 shadow-lg">
+            <!-- Left Slot (empty for main menu) -->
+            <div class="w-1/3">
+                <!-- Back button can be added here later if needed -->
+            </div>
+            
+            <!-- Center Slot: Time -->
+            <div class="w-1/3 text-center">
+                <div id="current-time" class="text-lg font-semibold text-main">
+                    --:--
+                </div>
+            </div>
+
+            <!-- Right Slot: Settings -->
+            <div class="w-1/3 flex justify-end">
+                <button onclick="showSettingsPage()" class="nav-item-sm p-2 bg-card rounded-full focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-main" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Time Display -->
+        <!-- MOVED to global-header -->
+
+        <!-- ===== PAGE: USER LOGIN ===== -->
+        <div id="page-user-login" class="page flex items-center justify-center p-4">
+            <div class="w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl bg-alt">
+                <h1 class="text-3xl font-bold text-center text-main">IPTV Player</h1>
+                <p class="text-center text-alt">Enter your username to load profile</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="username" class="block mb-2 text-sm font-medium text-alt">Username</label>
+                        <input type="text" id="username" placeholder="e.g. 'family' or 'john'" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <button id="user-login-button" class="w-full p-3 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors nav-item">
+                        Login / Create
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== PAGE: API DETAILS (was LOGIN) ===== -->
+        <div id="page-api-details" class="page flex items-center justify-center p-4">
+            <div class="w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl bg-alt">
+                <h1 class="text-3xl font-bold text-center text-main">Connect API</h1>
+                <p class="text-center text-alt">Enter your Xtream Codes API details for user <b id="api-username" class="text-primary"></b></p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="host" class="block mb-2 text-sm font-medium text-alt">Server URL (http://...:port)</label>
+                        <input type="text" id="host" placeholder="http://mydomain.com:8080" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <div>
+                        <label for="api-user" class="block mb-2 text-sm font-medium text-alt">API Username</label>
+                        <input type="text" id="api-user" placeholder="your_username" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <div>
+                        <label for="api-pass" class="block mb-2 text-sm font-medium text-alt">API Password</label>
+                        <input type="password" id="api-pass" placeholder="your_password" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <button id="api-connect-button" class="w-full p-3 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors nav-item">
+                        Connect
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: MAIN MENU ===== -->
+        <div id="page-main" class="page flex items-center justify-center p-4">
+            <!-- Settings Button -->
+            <!-- MOVED to global-header -->
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                <button onclick="loadCategories('live')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 5h8a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Live TV</span>
+                </button>
+                <button onclick="loadCategories('vod')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Movies</span>
+                </button>
+                <button onclick="loadCategories('series')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Series</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: CATEGORIES ===== -->
+        <div id="page-categories" class="page p-4">
+            <header class="page-header p-4 flex items-center bg-alt shadow-lg">
+                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 id="categories-title" class="ml-4 text-2xl font-bold">Categories</h2>
+            </header>
+            <div id="category-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+                <!-- Categories will be injected here -->
+            </div>
+        </div>
+
+        <!-- ===== PAGE: CONTENT (MOVIES/SERIES) ===== -->
+        <div id="page-content" class="page p-4">
+            <header class="page-header p-4 flex items-center bg-alt shadow-lg">
+                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 id="content-title" class="ml-4 text-2xl font-bold">Content</h2>
+            </header>
+            <!-- Grid for Posters -->
+            <div id="content-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+                <!-- Movie/Series posters will be injected here -->
+            </div>
+        </div>
+        
+        <!-- ===== PAGE: SERIES DETAILS (NEW) ===== -->
+        <div id="page-series-details" class="page p-4">
+             <header class="page-header p-4 flex items-center bg-alt shadow-lg">
+                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 class="ml-4 text-2xl font-bold">Series Details</h2>
+            </header>
+            
+            <div class="flex flex-col md:flex-row gap-8 p-4 md:p-8">
+                <!-- Left Column: Info -->
+                <div class="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
+                    <img id="series-cover-image" src="https://placehold.co/400x600/374151/FFFFFF?text=Loading..." alt="Series Cover" class="w-full rounded-lg shadow-xl object-cover aspect-[2/3]">
+                    <h1 id="series-title" class="text-3xl font-bold text-main mt-4">Series Title</h1>
+                    <p id="series-year" class="text-lg text-alt">Year</p>
+                    <p id="series-plot" class="text-sm text-alt mt-4">Plot description will load here...</p>
+                </div>
+                
+                <!-- Right Column: Seasons & Episodes -->
+                <div class="w-full md:w-2/3 lg:w-3/4">
+                    <!-- Season Tabs -->
+                    <div id="series-seasons-tabs" class="flex flex-wrap gap-2 p-2 bg-card rounded-lg mb-4">
+                        <!-- Season tabs injected here -->
+                    </div>
+                    
+                    <!-- Episodes List -->
+                    <div id="series-episodes-list" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-2">
+                        <!-- Episodes injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== PAGE: SETTINGS ===== -->
+        <div id="page-settings" class="page p-4">
+             <header class="page-header p-4 flex items-center bg-alt shadow-lg">
+                <button onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 class="ml-4 text-2xl font-bold">Settings</h2>
+            </header>
+            <div class="p-4 max-w-2xl mx-auto space-y-6">
+                <!-- Theme Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">Change Theme</h3>
+                    <div class="flex gap-2 p-2 bg-card rounded-full w-max">
+                        <button onclick="setTheme('theme-default')" class="nav-item-sm w-8 h-8 bg-blue-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-red')" class="nav-item-sm w-8 h-8 bg-red-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-green')" class="nav-item-sm w-8 h-8 bg-green-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-purple')" class="nav-item-sm w-8 h-8 bg-purple-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-orange')" class="nav-item-sm w-8 h-8 bg-orange-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                    </div>
+                </div>
+                
+                <!-- Account Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">Account</h3>
+                    <button id="logout-button" class="nav-item p-3 font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors w-full sm:w-auto">
+                        Logout (User: <span id="setting-username"></span>)
+                    </button>
+                </div>
+
+                <!-- API Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">API Settings</h3>
+                    <button id="change-api-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors w-full sm:w-auto">
+                        Change Xtream API
+                    </button>
+                </div>
+                
+                <!-- Cache Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">Clear Cache</h3>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                         <button id="clear-favorites-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear All Favorites
+                        </button>
+                        <button id="clear-watched-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear Watched Progress
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: PLAYER ===== -->
+        <div id="page-player" class="page">
+            <!-- 1. Standard HTML5 Web Player -->
+            <video id="web-video-player" controls class="hidden w-full h-full"></video>
+
+            <!-- 2. Tizen AVPlay Container -->
+            <div id="tizen-player-container" class="hidden"></div>
+            
+            <!-- 3. Tizen Player Overlay (as requested for details) -->
+            <div id="tizen-player-overlay" class="hidden absolute top-0 left-0 p-8 text-white bg-gradient-to-b from-black/70 via-black/0 to-black/0 opacity-0 transition-opacity duration-500">
+                <h3 id="tizen-movie-name" class="text-3xl font-bold">Movie Name</h3>
+                <p id="tizen-movie-rating" class="text-xl text-yellow-400">Rating: 9.0</p>
+                <p class="text-lg text-gray-300 mt-4">Press "Back" on your remote to exit</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== Global Overlays ===== -->
+    <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+        <div class="loader"></div>
+    </div>
+    
+    <div id="error-toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg bg-red-600 text-white">
+        An error occurred. Please try again.
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div id="movie-details-modal" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-card w-full max-w-3xl rounded-lg shadow-xl overflow-hidden flex flex-col md:flex-row">
+            <!-- Poster -->
+            <img id="modal-movie-poster" src="https://placehold.co/400x600/374151/FFFFFF?text=Loading..." class="w-full md:w-1/3 h-64 md:h-auto object-cover" alt="Movie Poster">
+            <!-- Details -->
+            <div class="flex-1 p-6 space-y-4 overflow-y-auto" style="max-height: 80vh;">
+                <h2 id="modal-movie-title" class="text-3xl font-bold text-main">Movie Title</h2>
+                <div class="flex flex-wrap items-center gap-4 text-alt">
+                    <span id="modal-movie-year">2023</span>
+                    <span id="modal-movie-duration">120 min</span>
+                    <span class="flex items-center gap-1 text-yellow-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        <span id="modal-movie-rating-text">8.5</span>
+                    </span>
+                </div>
+                <p id="modal-movie-plot" class="text-main">Plot summary goes here...</p>
+                <p class="text-sm text-alt"><strong>Cast:</strong> <span id="modal-movie-cast">Actor 1, Actor 2</span></p>
+                <p class="text-sm text-alt"><strong>Genre:</strong> <span id="modal-movie-genre">Action, Sci-Fi</span></p>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-4 pt-4">
+                    <button id="modal-play-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors">
+                        Play
+                    </button>
+                    <button id="modal-close-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-alt text-main hover:bg-opacity-80 transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 6. Main Application JavaScript -->
+    <script>
+        // === Global State ===
+        let isTizen = false;
+        let currentUsername = '';
+        const defaultUserSettings = {
+            favorites: [], // Array of stream_ids
+            watched: {}, // { id: { progress_sec, duration_sec, type, item, episode? } }
+            theme: 'theme-default',
+            xtreamConfig: {
+                host: '',
+                username: '',
+                password: ''
+            }
+        };
+        let userSettings = { ...defaultUserSettings };
+        
+        let apiBaseUrl = '';
+        let navigationStack = []; // For "Back" button functionality
+        let tizenAvPlayer; // Holds the Tizen player object
+        let tizenOverlayTimer;
+        let currentItem = null; // Holds item being played for progress saving
+        let currentEpisode = null; // Holds episode being played
+        let saveProgressInterval;
+        let lastFocusedElement = null; // For restoring focus after modal
+        let clockInterval;
+
+        // === DOM Elements ===
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+
+        // === Initialization ===
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("App initializing...");
+            detectTizen();
+            setupKeyListeners();
+            setupEventListeners();
+            setupClock();
+            
+            const lastUser = localStorage.getItem('iptv-last-user');
+            if (lastUser) {
+                $('#username').value = lastUser;
+                handleUserLogin();
+            } else {
+                showPage('page-user-login');
+            }
+        });
+        
+        function detectTizen() {
+            try {
+                if (typeof webapis !== 'undefined' && webapis.avplay) {
+                    isTizen = true;
+                    console.log("Tizen platform detected. Using AVPlay.");
+                    
+                    document.addEventListener('tizenhwkey', (e) => {
+                        if (e.keyName === "back") {
+                            // Check if modal is open
+                            if ($('#movie-details-modal').style.display === 'flex') {
+                                hideMovieDetailsModal();
+                            } else {
+                                goBack();
+                            }
+                        }
+                    });
+                } else {
+                    console.log("Standard Web platform detected. Using HTML5 <video> player.");
+                }
+            } catch (e) {
+                console.log("Error detecting Tizen, defaulting to Web.", e);
+                isTizen = false;
+            }
+        }
+
+        function setupEventListeners() {
+            // User Login
+            $('#user-login-button').addEventListener('click', handleUserLogin);
+            $('#username').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleUserLogin();
+            });
+
+            // API Connect
+            $('#api-connect-button').addEventListener('click', handleApiConnect);
+            
+            // Settings Page
+            $('#logout-button').addEventListener('click', handleLogout);
+            $('#change-api-button').addEventListener('click', () => {
+                // Save current page to stack before moving
+                pushToNavStack($$('.page[style*="block"]')[0].id);
+                showPage('page-api-details');
+            });
+            $('#clear-favorites-button').addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all favorites?')) {
+                    userSettings.favorites = [];
+                    saveUserSettings();
+                    showError('Favorites cleared.');
+                }
+            });
+            $('#clear-watched-button').addEventListener('click', () => {
+                 if (confirm('Are you sure you want to clear all watched progress?')) {
+                    userSettings.watched = {};
+                    saveUserSettings();
+                    showError('Watched progress cleared.');
+                }
+            });
+        }
+        
+        function setupKeyListeners() {
+            document.addEventListener('keydown', (e) => {
+                const activePageId = navigationStack[navigationStack.length - 1]?.pageId;
+                
+                // 1. Global Keys
+                if (e.key === 'Escape') {
+                    // Check if modal is open
+                    if ($('#movie-details-modal').style.display === 'flex') {
+                        hideMovieDetailsModal();
+                    } else {
+                        goBack();
+                    }
+                    return;
+                }
+                
+                // 2. Navigation Keys (Arrows/Enter)
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+                    e.preventDefault();
+                    if (e.key === 'Enter') {
+                        document.activeElement?.click();
+                        return;
+                    }
+                    // Check if modal is open and handle nav inside it
+                    if ($('#movie-details-modal').style.display === 'flex') {
+                        handleArrowNavigation(e.key, '#movie-details-modal');
+                    } else {
+                        handleArrowNavigation(e.key);
+                    }
+                    return;
+                }
+                
+                // 3. Context-specific Keys
+                if (activePageId === 'page-content' || (activePageId === 'page-categories' && (navigationStack[navigationStack.length-1].context?.special === 'favorites' || navigationStack[navigationStack.length-1].context?.special === 'watched'))) {
+                    if (e.key === 'f') {
+                        // Toggle favorite on the focused item
+                        const focusedItem = document.activeElement;
+                        if (focusedItem && focusedItem.dataset.streamId) {
+                            toggleFavorite(focusedItem.dataset.streamId, focusedItem.dataset.type, JSON.parse(focusedItem.dataset.item));
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupClock() {
+            const updateTime = () => {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                $('#current-time').textContent = `${hours}:${minutes}`;
+            };
+            updateTime();
+            clockInterval = setInterval(updateTime, 30000); // Update every 30s
+        }
+        
+        function handleArrowNavigation(key, parentSelector = null) {
+            const activePage = parentSelector ? $(parentSelector) : $('.page[style*="block"]');
+            if (!activePage) return;
+            
+            // *** NAVIGATION FIX ***
+            // Select only grid items on content/category pages, or all items on other pages
+            let focusableItems = [];
+            
+            if (parentSelector) {
+                // We are inside a modal
+                focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+            } else if (activePage.id === 'page-categories' || activePage.id === 'page-content') {
+                 focusableItems = Array.from(activePage.querySelectorAll('#category-grid .nav-item, #content-grid .nav-item'));
+            } else if (activePage.id === 'page-series-details') {
+                // Special nav for series page (Seasons + Episodes)
+                focusableItems = Array.from(activePage.querySelectorAll('#series-seasons-tabs .nav-item, #series-episodes-list .nav-item'));
+            } else if (activePage.id === 'page-main') {
+                 // Only focus the three main category buttons
+                 focusableItems = Array.from(activePage.querySelectorAll('[onclick*="loadCategories"]'));
+            } else {
+                // Default behavior for all other pages (login, settings, etc.)
+                focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+            }
+            // **********************
+            
+            if (focusableItems.length === 0) return;
+
+            let currentIndex = focusableItems.indexOf(document.activeElement);
+            
+            // If nothing is focused, focus the first item
+            if (currentIndex === -1) {
+                focusableItems[0].focus();
+                return;
+            }
+
+            // Get geometry
+            const currentRect = focusableItems[currentIndex].getBoundingClientRect();
+            
+            let nextItem = null;
+            let minDistance = Infinity;
+            
+            // Simple grid logic for grids
+            const grid = activePage.querySelector('#content-grid, #category-grid');
+            if (grid && !parentSelector) { // Only apply grid logic if not in modal
+                const style = window.getComputedStyle(grid);
+                const columns = style.getPropertyValue('grid-template-columns').split(' ').length;
+                
+                let nextIndex = -1;
+                if (key === 'ArrowRight') nextIndex = currentIndex + 1;
+                else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
+                else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
+                else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
+
+                if (nextIndex >= 0 && nextIndex < focusableItems.length) {
+                    focusableItems[nextIndex].focus();
+                    focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+            
+            // Fallback: Find closest item in the desired direction (for mixed layouts)
+            focusableItems.forEach((item, index) => {
+                if (index === currentIndex) return;
+                const itemRect = item.getBoundingClientRect();
+                let isCandidate = false;
+                let distance = Infinity;
+
+                switch (key) {
+                    case 'ArrowRight':
+                        if (itemRect.left > currentRect.left || (itemRect.left === currentRect.left && itemRect.top > currentRect.top)) {
+                            isCandidate = true;
+                            distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2); // Prioritize horizontal
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (itemRect.left < currentRect.left || (itemRect.left === currentRect.left && itemRect.top < currentRect.top)) {
+                            isCandidate = true;
+                            distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2);
+                        }
+                        break;
+                    case 'ArrowDown':
+                        if (itemRect.top > currentRect.top) {
+                            isCandidate = true;
+                            distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top); // Prioritize vertical
+                        }
+                        break;
+                    case 'ArrowUp':
+                        if (itemRect.top < currentRect.top) {
+                            isCandidate = true;
+                            distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top);
+                        }
+                        break;
+                }
+                
+                if (isCandidate && distance < minDistance) {
+                    minDistance = distance;
+                    nextItem = item;
+                }
+            });
+            
+            if (nextItem) {
+                nextItem.focus();
+                nextItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+
+        // === Navigation ===
+        function showPage(pageId) {
+            // Show/Hide global header
+            const globalHeader = $('#global-header');
+            if (pageId === 'page-player') {
+                globalHeader.style.display = 'none';
+            } else {
+                globalHeader.style.display = 'flex';
+            }
+
+            $$('.page').forEach(page => page.style.display = 'none');
+            const targetPage = $(`#${pageId}`);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+                targetPage.scrollTop = 0; // Scroll to top
+                
+                // Focus the first item
+                const firstItem = targetPage.querySelector('.nav-item, .nav-item-sm');
+                if (firstItem) {
+                    // Use a small timeout to ensure focus works after display:block
+                    setTimeout(() => firstItem.focus(), 50);
+                }
+            } else {
+                console.error(`Page not found: ${pageId}`);
+            }
+        }
+
+        function pushToNavStack(pageId, context = {}) {
+            // Avoid pushing the same page twice
+            if (navigationStack.length > 0 && navigationStack[navigationStack.length-1].pageId === pageId) {
+                navigationStack[navigationStack.length-1].context = context; // update context
+                return;
+            }
+            navigationStack.push({ pageId, context });
+        }
+        
+        function showSettingsPage() {
+            pushToNavStack($$('.page[style*="block"]')[0].id); // Save current page
+            $('#setting-username').textContent = currentUsername;
+            showPage('page-settings');
+            pushToNavStack('page-settings');
+        }
+
+        function goBack() {
+            const currentPage = navigationStack.pop();
+            if (!currentPage) return; // Should not happen
+
+            if (currentPage.pageId === 'page-player') {
+                stopPlayer();
+            }
+
+            if (navigationStack.length === 0) {
+                showPage('page-main');
+                pushToNavStack('page-main');
+                return;
+            }
+
+            const lastState = navigationStack[navigationStack.length - 1];
+            if (lastState) {
+                showPage(lastState.pageId);
+                // After showing, re-focus the correct element
+                setTimeout(() => {
+                    let firstItem;
+                    if (lastState.pageId === 'page-main') {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('[onclick*="loadCategories"]');
+                    } else if (lastState.pageId === 'page-categories' || lastState.pageId === 'page-content') {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('#category-grid .nav-item, #content-grid .nav-item');
+                    } else {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('.nav-item, .nav-item-sm');
+                    }
+                    if (firstItem) firstItem.focus();
+                }, 100);
+            }
+        }
+
+        // === Theming ===
+        function setTheme(themeName) {
+            document.body.className = themeName;
+            userSettings.theme = themeName;
+            saveUserSettings();
+        }
+
+        function loadTheme() {
+            document.body.className = userSettings.theme || 'theme-default';
+        }
+
+        // === Loading & Error Handling ===
+        function showLoader(show) {
+            $('#loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+        
+        function showError(message) {
+            const toast = $('#error-toast');
+            toast.textContent = message || 'An error occurred.';
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // === User & Settings Management ===
+        function saveUserSettings() {
+            if (!currentUsername) return;
+            localStorage.setItem(`iptv-user-${currentUsername}`, JSON.stringify(userSettings));
+        }
+
+        function loadUserSettings(username) {
+            const savedSettings = localStorage.getItem(`iptv-user-${username}`);
+            if (savedSettings) {
+                userSettings = JSON.parse(savedSettings);
+                // Ensure all keys from default are present
+                userSettings = {
+                    ...defaultUserSettings,
+                    ...userSettings,
+                    // Deeper merge for config
+                    xtreamConfig: {
+                        ...defaultUserSettings.xtreamConfig,
+                        ...(userSettings.xtreamConfig || {})
+                    },
+                    // Ensure nested objects exist
+                    favorites: userSettings.favorites || [],
+                    watched: userSettings.watched || {},
+                };
+            } else {
+                userSettings = { ...defaultUserSettings }; // Create new profile
+            }
+            currentUsername = username;
+            localStorage.setItem('iptv-last-user', username);
+            loadTheme();
+        }
+        
+        function handleUserLogin() {
+            const username = $('#username').value.trim();
+            if (!username) {
+                showError('Please enter a username.');
+                return;
+            }
+            
+            loadUserSettings(username);
+            
+            // Check if API is configured
+            if (userSettings.xtreamConfig && userSettings.xtreamConfig.host) {
+                // Test API config
+                handleApiConnect(null,true); // true = isAutoLogin
+            } else {
+                // Need to configure API
+                $('#api-username').textContent = username;
+                // Pre-fill fields from settings
+                $('#host').value = userSettings.xtreamConfig.host || '';
+                $('#api-user').value = userSettings.xtreamConfig.username || '';
+                $('#api-pass').value = userSettings.xtreamConfig.password || '';
+                showPage('page-api-details');
+            }
+        }
+        
+        function handleLogout() {
+            currentUsername = '';
+            userSettings = { ...defaultUserSettings };
+            navigationStack = [];
+            showPage('page-user-login');
+        }
+
+        // === API Handling ===
+        async function handleApiConnect(e, isAutoLogin = false) {
+            console.log(`handleApiConnect called (isAutoLogin: ${isAutoLogin})`); // DEBUG
+            const config = userSettings.xtreamConfig;
+            
+            if (!isAutoLogin) {
+                config.host = $('#host').value.trim();
+                config.username = $('#api-user').value.trim();
+                config.password = $('#api-pass').value.trim();
+                
+                console.log('Reading from form fields:', config); // DEBUG
+            }
+
+            if (!config.host || !config.username || !config.password) {
+                console.log(isAutoLogin)
+                console.log('Validation failed. One or more fields are empty.'); // DEBUG
+                if (!isAutoLogin) showError('Please fill in all fields.');
+                showPage('page-api-details');
+                return;
+            }
+            
+            console.log('Validation passed. Proceeding to fetch.'); // DEBUG
+
+            if (!config.host.startsWith('http')) config.host = 'http://' + config.host;
+            if (config.host.endsWith('/')) config.host = config.host.slice(0, -1);
+
+            apiBaseUrl = `${config.host}/player_api.php`;
+
+            try {
+                // Test login
+                const data = await fetchXtream({ action: 'get_vod_categories' });
+                if (data) {
+                    console.log('API connection successful');
+                    userSettings.xtreamConfig = config; // Save config
+                    saveUserSettings();
+                    
+                    showPage('page-main');
+                    navigationStack = []; // Reset stack
+                    pushToNavStack('page-main');
+                } else {
+                    throw new Error("Authentication failed or empty response.");
+                }
+            } catch (error) {
+                console.error('API connection failed:', error);
+                // Use the specific error message from fetchXtream
+                showError(`API Error: ${error.message}`);
+                
+                // Pre-fill fields with the data that just failed
+                $('#host').value = config.host || '';
+                $('#api-user').value = config.username || '';
+                $('#api-pass').value = config.password || '';
+                
+                showPage('page-api-details');
+            }
+        }
+
+        async function fetchXtream(params) {
+            showLoader(true);
+            const urlParams = new URLSearchParams({
+                username: userSettings.xtreamConfig.username,
+                password: userSettings.xtreamConfig.password,
+                ...params
+            });
+
+            const url = `${apiBaseUrl}?${urlParams.toString()}`;
+            console.log(`Fetching from Xtream API: ${url}`); // DEBUG
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Network error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                if (data.user_info && data.user_info.auth === 0) {
+                     throw new Error("Xtream API: Authentication failed.");
+                }
+                
+                showLoader(false);
+                return data;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                
+                // Check for network failure, which is often a CORS issue
+                if (error instanceof TypeError && error.message === "Failed to fetch") {
+                     const specificError = "Network Error (Server offline or CORS issue).";
+                     showError(specificError);
+                     throw new Error(specificError); // Re-throw to be caught by handleApiConnect
+                } else {
+                    showError(error.message); // Show specific error (e.g., "Authentication failed")
+                    throw error; // Re-throw
+                }
+            }
+        }
+        
+        // === Favorites & Watched Logic ===
+        
+        function isFavorite(stream_id) {
+            return userSettings.favorites.includes(String(stream_id));
+        }
+        
+        function toggleFavorite(stream_id, type, item) {
+            if (!stream_id || !type || !item) {
+                 const focusedItem = document.activeElement;
+                 stream_id = focusedItem.dataset.streamId;
+                 type = focusedItem.dataset.type;
+                 item = JSON.parse(focusedItem.dataset.item);
+            }
+
+            const idStr = String(stream_id);
+            const heartIcon = $(`#fav-icon-${idStr}`);
+            
+            if (isFavorite(idStr)) {
+                userSettings.favorites = userSettings.favorites.filter(id => id !== idStr);
+                if (heartIcon) heartIcon.innerHTML = getHeartIcon(false); // Update UI
+                console.log("Removed from favorites");
+            } else {
+                userSettings.favorites.push(idStr);
+                if (heartIcon) heartIcon.innerHTML = getHeartIcon(true); // Update UI
+                console.log("Added to favorites");
+            }
+            
+            // Need to save the full item for "Favorites" category
+            // We'll store it in the 'watched' object as it can hold item data
+            const key = type === 'series' ? item.series_id : item.stream_id;
+            if (!userSettings.watched[key]) {
+                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: type, item: item };
+            }
+            
+            saveUserSettings();
+        }
+        
+        /**
+         * Gets watched progress for a VOD item or a Series.
+         * @param {string} id - The stream_id (VOD) or series_id (Series).
+         * @param {string|null} [episode_id=null] - (For Series) The specific episode ID to check progress for.
+         * @returns {object|null} The progress object or null.
+         */
+        function getWatchedProgress(id, episode_id = null) {
+            const progress = userSettings.watched[String(id)];
+            if (!progress) return null;
+
+            if (progress.type === 'series' && episode_id) {
+                // User wants progress for a *specific* episode
+                if (progress.episode && String(progress.episode.id) === String(episode_id)) {
+                    return progress; // Progress matches this episode
+                }
+                return null; // Progress exists for the series, but a different episode
+            }
+            
+            // For VOD, or just checking series-level (last watched)
+            return progress;
+        }
+        
+        /**
+         * Saves progress for the currently playing item.
+         * @param {object} item - The VOD item or Series item.
+         * @param {number} currentTime - Current playback time in seconds.
+         * @param {number} duration - Total duration in seconds.
+         * @param {string} type - 'vod' or 'series'.
+         * @param {object|null} [episodeData=null] - The episode object (if type is 'series').
+         */
+        function saveProgress(item, currentTime, duration, type, episodeData = null) {
+            if (!item || !duration || duration === 0) return;
+
+            let idStr;
+            let progressData;
+
+            if (type === 'series' && episodeData) {
+                idStr = String(item.series_id); // Save against the *Series ID*
+                progressData = {
+                    progress_sec: Math.floor(currentTime),
+                    duration_sec: Math.floor(duration),
+                    type: 'series',
+                    item: item, // The series item
+                    episode: episodeData // The episode item
+                };
+            } else if (type === 'vod') {
+                idStr = String(item.stream_id); // Save against the *VOD ID*
+                progressData = {
+                    progress_sec: Math.floor(currentTime),
+                    duration_sec: Math.floor(duration),
+                    type: 'vod',
+                    item: item
+                };
+            } else {
+                return; // Don't save progress for Live TV
+            }
+            
+            userSettings.watched[idStr] = progressData;
+            // Note: We don't call saveUserSettings() here to avoid spamming localStorage
+            // It's called by the saveProgressInterval instead.
+        }
+
+        // === Page Loading Logic ===
+        async function loadCategories(type) {
+            let action = '', title = '';
+            if (type === 'live') {
+                action = 'get_live_categories'; title = 'Live TV Categories';
+            } else if (type === 'vod') {
+                action = 'get_vod_categories'; title = 'Movie Categories';
+            } else if (type === 'series') {
+                action = 'get_series_categories'; title = 'Series Categories';
+            }
+
+            const categories = await fetchXtream({ action });
+            if (categories && Array.isArray(categories)) {
+                $('#categories-title').textContent = title;
+                const grid = $('#category-grid');
+                grid.innerHTML = ''; // Clear old
+                
+                // Add custom categories
+                if (type === 'vod' || type === 'series') {
+                    // 1. Continue Watching
+                    const watchedItems = Object.values(userSettings.watched).filter(w => w.type === type && w.progress_sec > 0);
+                    if (watchedItems.length > 0) {
+                        grid.appendChild(createCategoryCard('Continue Watching', 'watched', type, { special: 'watched' }));
+                    }
+                    // 2. Favorites
+                    if (userSettings.favorites.length > 0) {
+                        const favItems = userSettings.favorites
+                            .map(id => {
+                                // Find item in watched cache
+                                const watchedItem = Object.values(userSettings.watched).find(w => 
+                                    (w.item.stream_id == id || w.item.series_id == id)
+                                );
+                                return watchedItem ? watchedItem.item : null;
+                            })
+                            .filter(item => item && (item.stream_type === type || (item.series_id && type === 'series'))); // Match type
+                            
+                        if (favItems.length > 0) {
+                             grid.appendChild(createCategoryCard('Favorites', 'favorites', type, { special: 'favorites' }));
+                        }
+                    }
+                }
+                
+                // 3. "All" Category
+                grid.appendChild(createCategoryCard('All', 'all', type));
+
+                // 4. API Categories
+                categories.forEach(cat => {
+                    grid.appendChild(createCategoryCard(cat.category_name, cat.category_id, type));
+                });
+                
+                showPage('page-categories');
+                pushToNavStack('page-categories', { type });
+            }
+        }
+        
+        function createCategoryCard(name, id, type, context = {}) {
+            const card = document.createElement('div');
+            card.className = 'nav-item p-6 rounded-lg bg-card text-center cursor-pointer transition-all hover:bg-opacity-80';
+            card.innerHTML = `<h3 class="text-lg font-bold text-main">${name}</h3>`;
+            card.onclick = () => loadContent(type, id, name, context);
+            return card;
+        }
+        
+        async function loadContent(type, categoryId, categoryName = 'Content', context = {}) {
+            let items = [];
+            let title = categoryName;
+
+            if (context.special === 'watched') {
+                items = Object.values(userSettings.watched)
+                    .filter(w => w.type === type && w.progress_sec > 0)
+                    .map(w => w.item);
+            } else if (context.special === 'favorites') {
+                 items = userSettings.favorites
+                    .map(id => {
+                         const watchedItem = Object.values(userSettings.watched).find(w => 
+                            (w.item.stream_id == id || w.item.series_id == id)
+                        );
+                        return watchedItem ? watchedItem.item : null;
+                    })
+                    .filter(item => item && (item.stream_type === type || (item.series_id && type === 'series'))); // Match type
+            } else {
+                let action = '';
+                if (type === 'live') action = 'get_live_streams';
+                else if (type === 'vod') action = 'get_vod_streams';
+                else if (type === 'series') action = 'get_series';
+
+                const params = { action };
+                if (categoryId !== 'all') params.category_id = categoryId;
+                items = await fetchXtream(params);
+            }
+
+            if (items && Array.isArray(items)) {
+                $('#content-title').textContent = title;
+                const grid = $('#content-grid');
+                grid.innerHTML = '';
+
+                if (items.length === 0) {
+                    grid.innerHTML = `<p class="text-alt col-span-full">No items found.</p>`;
+                    return;
+                }
+
+                items.forEach(item => {
+                    const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image';
+                    const name = item.name;
+                    const rating = item.rating_5based || item.rating || 0;
+                    const stream_id = item.stream_id || item.series_id;
+                    
+                    const progressInfo = getWatchedProgress(stream_id);
+                    const progressPercent = (progressInfo && progressInfo.duration_sec > 0) ? (progressInfo.progress_sec / progressInfo.duration_sec) * 100 : 0;
+                    
+                    let episodeTag = '';
+                    if (type === 'series' && progressInfo && progressInfo.episode) {
+                        const s = String(progressInfo.episode.season).padStart(2, '0');
+                        const e = String(progressInfo.episode.episode_num).padStart(2, '0');
+                        episodeTag = `<div class="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-xs font-bold text-main">S${s}E${e}</div>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'nav-item bg-card rounded-lg overflow-hidden shadow-lg cursor-pointer aspect-[2/3] relative transition-all flex flex-col';
+                    card.dataset.streamId = stream_id;
+                    card.dataset.type = type;
+                    card.dataset.item = JSON.stringify(item); // Store item data for fav/watch
+                    
+                    card.innerHTML = `
+                        <div class="relative w-full h-full">
+                            <img src="${poster}" alt="${name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image'">
+                            
+                            <!-- Episode Tag (Series Only) -->
+                            ${episodeTag}
+                            
+                            <!-- Rating -->
+                            <div class="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded-full text-xs font-bold text-yellow-400 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                <span>${Number(rating).toFixed(1)}</span>
+                            </div>
+                            
+                            <!-- Favorite Icon -->
+                            <button id="fav-icon-${stream_id}" onclick="event.stopPropagation(); toggleFavorite('${stream_id}', '${type}', \`${CSS.escape(JSON.stringify(item))}\`)" class="nav-item-sm absolute bottom-12 left-2 p-1.5 bg-black/70 rounded-full">
+                                ${getHeartIcon(isFavorite(stream_id))}
+                            </button>
+                            
+                            <!-- Name -->
+                            <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                                <h4 class="font-semibold text-main truncate">${name}</h4>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        ${progressPercent > 0 ? `
+                        <div class="progress-bar w-full">
+                            <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    card.onclick = () => {
+                        const progressInfo = getWatchedProgress(stream_id);
+                        const startTime = (context.special === 'watched' && progressInfo) ? progressInfo.progress_sec : 0;
+                        
+                        if (type === 'vod') {
+                            handleMovieClick(item, startTime); // MODIFIED: Show modal first
+                        } else if (type === 'live') {
+                            playLive(item);
+                        } else if (type === 'series') {
+                            if (context.special === 'watched' && progressInfo && progressInfo.episode) {
+                                // "Continue Watching" clicked - play episode directly
+                                playEpisode(progressInfo.episode, item, startTime);
+                            } else {
+                                // Show series details page
+                                loadSeriesInfo(item);
+                            }
+                        }
+                    };
+                    
+                    grid.appendChild(card);
+                });
+                
+                showPage('page-content');
+                pushToNavStack('page-content', { type, categoryId, categoryName, context });
+            }
+        }
+        
+        function getHeartIcon(isFav) {
+             return isFav ? 
+             '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-primary" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>' : 
+             '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
+        }
+        
+        // === SERIES IMPLEMENTATION ===
+        
+        async function loadSeriesInfo(seriesItem) {
+            showLoader(true);
+            try {
+                const info = await fetchXtream({ action: 'get_series_info', series_id: seriesItem.series_id });
+                if (!info) throw new Error("Could not load series info.");
+
+                // 1. Populate Details
+                $('#series-cover-image').src = info.info.cover || seriesItem.cover || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
+                $('#series-title').textContent = info.info.name || seriesItem.name;
+                $('#series-plot').textContent = info.info.plot || 'No description available.';
+                $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
+
+                // 2. Populate Seasons
+                const seasonTabs = $('#series-seasons-tabs');
+                seasonTabs.innerHTML = '';
+                const episodesBySeason = info.episodes;
+                
+                if (!episodesBySeason || Object.keys(episodesBySeason).length === 0) {
+                     $('#series-episodes-list').innerHTML = '<p class="text-alt">No episodes found for this series.</p>';
+                     showLoader(false);
+                     showPage('page-series-details');
+                     pushToNavStack('page-series-details', { seriesItem });
+                     return;
+                }
+
+                const seasonNumbers = Object.keys(episodesBySeason).sort((a, b) => Number(a) - Number(b));
+                
+                seasonNumbers.forEach((seasonNum, index) => {
+                    const tab = document.createElement('button');
+                    tab.className = 'nav-item season-tab px-4 py-2 rounded-lg bg-alt text-alt font-semibold';
+                    tab.textContent = `Season ${seasonNum}`;
+                    tab.dataset.seasonNum = seasonNum;
+                    tab.onclick = () => {
+                        // Update active tab style
+                        $$('.season-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        // Load episodes
+                        loadSeasonEpisodes(episodesBySeason[seasonNum], seriesItem);
+                    };
+                    seasonTabs.appendChild(tab);
+                });
+
+                // 3. Load First Season's Episodes
+                if (seasonNumbers.length > 0) {
+                    const firstSeasonKey = seasonNumbers[0];
+                    loadSeasonEpisodes(episodesBySeason[firstSeasonKey], seriesItem);
+                    // Set first tab as active
+                    setTimeout(() => {
+                         const firstTab = $('.season-tab');
+                         if(firstTab) firstTab.classList.add('active');
+                    }, 0);
+                }
+
+                showPage('page-series-details');
+                pushToNavStack('page-series-details', { seriesItem });
+
+            } catch (e) {
+                console.error("Error loading series info:", e);
+                showError("Could not load series details.");
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function loadSeasonEpisodes(episodes, seriesItem) {
+            const episodesList = $('#series-episodes-list');
+            episodesList.innerHTML = '';
+            
+            if (!episodes || episodes.length === 0) {
+                episodesList.innerHTML = '<p class="text-alt">No episodes found for this season.</p>';
+                return;
+            }
+
+            episodes.forEach(episode => {
+                const epCard = document.createElement('button');
+                epCard.className = 'nav-item w-full p-4 rounded-lg bg-card text-left text-main hover:bg-opacity-80 flex justify-between items-center';
+                
+                const progress = getWatchedProgress(seriesItem.series_id, episode.id);
+                const progressPercent = (progress && progress.duration_sec > 0) ? (progress.progress_sec / progress.duration_sec) * 100 : 0;
+                
+                epCard.innerHTML = `
+                    <div class="flex-1">
+                        <span class="text-primary font-bold">E${episode.episode_num}</span>: ${episode.title}
+                        ${progressPercent > 0 ? `
+                        <div class="progress-bar w-full mt-2">
+                            <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <span class="text-alt text-sm">${episode.duration || ''}</span>
+                `;
+                
+                epCard.onclick = () => {
+                    const startTime = progress ? progress.progress_sec : 0;
+                    playEpisode(episode, seriesItem, startTime);
+                };
+                
+                episodesList.appendChild(epCard);
+            });
+            
+             // Focus first episode
+             const firstEpisode = episodesList.querySelector('.nav-item');
+             if (firstEpisode) {
+                 firstEpisode.focus();
+             }
+        }
+        
+        function playEpisode(episode, seriesItem, startTime = 0) {
+            currentItem = seriesItem; // Store series item
+            currentEpisode = episode; // Store episode item
+            console.log(currentEpisode)
+            showPage('page-player');
+            pushToNavStack('page-player');
+            
+            const ext = episode.container_extension || 'mp4';
+            const streamUrl = `${userSettings.xtreamConfig.host}/series/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${episode.stream_id}.${ext}`;
+            const details = {
+                name: `${seriesItem.name} - S${String(episode.season).padStart(2, '0')}E${String(episode.episode_num).padStart(2, '0')}`,
+                rating: seriesItem.rating_5based || seriesItem.rating
+            };
+            
+            if (isTizen) startTizenPlayer(streamUrl, details, startTime, 'series');
+            else startWebPlayer(streamUrl, details, startTime, 'series');
+        }
+
+        // === Player Logic ===
+        
+        /**
+         * NEW: Handles the click on a movie item.
+         * Tries to fetch info and show modal. Falls back to direct play.
+         */
+        async function handleMovieClick(item, startTime = 0) {
+            currentItem = item; // Store for progress saving
+            currentEpisode = null;
+            showLoader(true);
+            
+            try {
+                const info = await fetchXtream({ action: 'get_vod_info', vod_id: item.stream_id });
+                if (!info || !info.movie_data) throw new Error("Could not load movie info.");
+                
+                // Info fetched, show modal
+                showMovieDetailsModal(info, item, startTime);
+
+            } catch(e) {
+                console.warn("Failed to get movie info, playing directly.", e);
+                // Info failed, play directly
+                playMovie(item, startTime, null);
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        /**
+         * NEW: Shows the movie details modal
+         */
+        function showMovieDetailsModal(info, item, startTime) {
+            lastFocusedElement = document.activeElement; // Save focus
+            
+            // Populate modal fields
+            $('#modal-movie-poster').src = info.info.movie_image || item.movie_image || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
+            $('#modal-movie-title').textContent = info.info.name || item.name;
+            $('#modal-movie-year').textContent = info.info.releasedate || 'N/A';
+            $('#modal-movie-duration').textContent = info.info.duration || 'N/A';
+            $('#modal-movie-rating-text').textContent = Number(info.info.rating_5based || item.rating || 0).toFixed(1);
+            $('#modal-movie-plot').textContent = info.info.plot || 'No description available.';
+            $('#modal-movie-cast').textContent = info.info.cast || 'N/A';
+            $('#modal-movie-genre').textContent = info.info.genre || 'N/A';
+            
+            // Set up button actions
+            $('#modal-play-button').onclick = () => {
+                hideMovieDetailsModal();
+                playMovie(item, startTime, info); // Pass info to player
+            };
+            $('#modal-close-button').onclick = hideMovieDetailsModal;
+            
+            // Show modal and focus
+            $('#movie-details-modal').style.display = 'flex';
+            $('#modal-play-button').focus();
+        }
+
+        /**
+         * NEW: Hides the movie details modal
+         */
+        function hideMovieDetailsModal() {
+            $('#movie-details-modal').style.display = 'none';
+            if (lastFocusedElement) {
+                lastFocusedElement.focus(); // Restore focus
+            }
+        }
+
+        /**
+         * NEW: This function *only* starts playback.
+         * It can be called from the modal (with info) or from handleMovieClick (without info).
+         */
+        function playMovie(item, startTime, info = null) {
+            currentItem = item;
+            currentEpisode = null;
+            showPage('page-player');
+            pushToNavStack('page-player');
+            
+            let ext, streamUrl, details, subtitles = null;
+
+            if (!info || !info.movie_data) {
+                // This branch is for when info *failed* and we're playing directly.
+                console.warn("Playing without full info, guessing extension.");
+                ext = 'mp4'; // Guess
+                streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+                details = { name: item.name, rating: item.rating };
+            } else {
+                // This branch is when info *succeeded* and we're playing from the modal.
+                ext = info.movie_data.container_extension || 'mp4';
+                streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+                details = {
+                    name: info.info.name || item.name,
+                    rating: info.info.rating_5based || item.rating
+                };
+                subtitles = info.movie_data.subtitles || null; // Get subtitles
+            }
+            
+            if (isTizen) startTizenPlayer(streamUrl, details, startTime, 'vod', subtitles);
+            else startWebPlayer(streamUrl, details, startTime, 'vod', subtitles);
+        }
+
+        async function playLive(item) {
+            currentItem = item;
+            currentEpisode = null;
+            showPage('page-player');
+            pushToNavStack('page-player');
+            
+            const streamUrl = `${userSettings.xtreamConfig.host}/live/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.ts`;
+            const details = { name: item.name, rating: null };
+
+            if (isTizen) startTizenPlayer(streamUrl, details, 0, 'live');
+            else startWebPlayer(streamUrl, details, 0, 'live');
+        }
+
+        function startWebPlayer(url, details, startTime, type, subtitles = null) {
+            console.log(`Starting Web Player: ${url} at ${startTime}s`);
+            const player = $('#web-video-player');
+            
+            // Clear old subtitle tracks
+            const oldTracks = player.querySelectorAll('track');
+            oldTracks.forEach(t => t.remove());
+
+            // Add new subtitle tracks if available
+            if (type === 'vod' && subtitles && Array.isArray(subtitles)) {
+                console.log(`Found ${subtitles.length} subtitle tracks.`);
+                subtitles.forEach((sub, index) => {
+                    if (!sub.url) return; // Skip if no URL
+                    const track = document.createElement('track');
+                    track.kind = 'subtitles';
+                    track.label = sub.language || `Track ${index + 1}`;
+                    // Try to get a 2-char lang code
+                    let srclang = 'en'; 
+                    if (sub.language) {
+                        srclang = sub.language.slice(0, 2).toLowerCase();
+                    }
+                    if (sub.language_code) {
+                        srclang = sub.language_code;
+                    }
+                    
+                    track.srclang = srclang;
+                    track.src = sub.url;
+                    
+                    if (index === 0) {
+                        track.default = true; // Make first one default
+                    }
+                    player.appendChild(track);
+                });
+            }
+
+            player.src = url;
+            player.style.display = 'block';
+            
+            player.ontimeupdate = () => {
+                // Pass currentItem (series) and currentEpisode (episode) if it's a series
+                saveProgress(currentItem, player.currentTime, player.duration, type, currentEpisode);
+            };
+            
+            player.onloadedmetadata = () => {
+                if (startTime > 0) player.currentTime = startTime;
+                player.play();
+            };
+            
+            player.play();
+            
+            // Start periodic saving
+            clearInterval(saveProgressInterval); // Clear any old ones
+            saveProgressInterval = setInterval(saveUserSettings, 15000); // Save every 15s
+        }
+
+        function startTizenPlayer(url, details, startTime, type, subtitles = null) {
+            console.log(`Starting Tizen Player: ${url} at ${startTime}s`);
+            
+            const container = $('#tizen-player-container');
+            container.style.display = 'block';
+            container.innerHTML = '<object type="application/avplayer" id="av-player" style="width:100%; height:100%;"></object>';
+            tizenAvPlayer = $('#av-player');
+
+            // Show overlay
+            $('#tizen-movie-name').textContent = details.name;
+            $('#tizen-movie-rating').style.display = details.rating ? 'block' : 'none';
+            if(details.rating) $('#tizen-movie-rating').textContent = `Rating: ${Number(details.rating).toFixed(1)}`;
+            const overlay = $('#tizen-player-overlay');
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.style.opacity = '1', 50); // Fade in
+            clearTimeout(tizenOverlayTimer);
+            tizenOverlayTimer = setTimeout(() => overlay.style.opacity = '0', 5000); // Fade out after 5s
+
+            try {
+                const playerListener = {
+                    onbufferingstart: () => console.log("AVPlay: Buffering start..."),
+                    onbufferingcomplete: () => console.log("AVPlay: Buffering complete."),
+                    onstreamcompleted: () => {
+                        console.log("AVPlay: Stream completed.");
+                        // Mark as fully watched by setting progress to duration
+                        const duration = webapis.avplay.getDuration();
+                        saveProgress(currentItem, duration / 1000, duration / 1000, type, currentEpisode);
+                        goBack();
+                    },
+                    onerror: (err) => {
+                        console.error("AVPlay Error:", err);
+                        showError("Tizen Player Error. Unsupported format?");
+                        goBack();
+                    },
+                    oncurrentplaytime: (time) => {
+                        const duration = webapis.avplay.getDuration();
+                        saveProgress(currentItem, time / 1000, duration / 1000, type, currentEpisode);
+                    }
+                };
+                
+                webapis.avplay.setListener(playerListener);
+                webapis.avplay.open(url);
+                
+                // Set external subtitle for Tizen
+                if (type === 'vod' && subtitles && subtitles.length > 0) {
+                    // Tizen only seems to support one external path. Use the first one.
+                    const subUrl = subtitles[0].url;
+                    if (subUrl) {
+                        console.log("Setting Tizen external subtitle:", subUrl);
+                        webapis.avplay.setExternalSubtitlePath(subUrl);
+                    }
+                }
+
+                webapis.avplay.setDisplayRect(0, 0, 1920, 1080); // Full HD
+                
+                webapis.avplay.prepareAsync(() => {
+                    console.log("AVPlay: Prepared. Playing...");
+
+                    // Try to enable the subtitle track (1-based index, 0 is 'off')
+                    if (type === 'vod' && subtitles && subtitles.length > 0) {
+                        try { 
+                            webapis.avplay.setVideoProperty('SUBTITLE', 1); 
+                            console.log("Enabled subtitle track 1");
+                        } catch (e) { 
+                            console.warn("Could not set subtitle track", e); 
+                        }
+                    }
+
+                    if (startTime > 0) {
+                        webapis.avplay.seekTo(startTime * 1000, 
+                            () => webapis.avplay.play(),
+                            (e) => { console.error("Seek failed", e); webapis.avplay.play(); } // Play anyway
+                        );
+                    } else {
+                        webapis.avplay.play();
+                    }
+                    // Start periodic saving
+                    clearInterval(saveProgressInterval); // Clear any old ones
+                    saveProgressInterval = setInterval(saveUserSettings, 15000); // Save every 15s
+                    
+                }, (e) => {
+                    console.error("AVPlay: Prepare Error", e);
+                    showError("Tizen: Could not prepare video.");
+                    goBack();
+                });
+
+            } catch (e) {
+                console.error("Tizen AVPlay critical error:", e);
+                showError("Tizen AVPlay API failed.");
+                goBack();
+            }
+        }
+
+        function stopPlayer() {
+            clearInterval(saveProgressInterval); // Stop periodic saving
+            saveUserSettings(); // Do one final save
+            currentItem = null;
+            currentEpisode = null;
+            
+            if (isTizen && tizenAvPlayer) {
+                try {
+                    console.log("Stopping Tizen Player");
+                    webapis.avplay.stop();
+                    webapis.avplay.close();
+                    tizenAvPlayer = null;
+                    $('#tizen-player-container').innerHTML = '';
+                    $('#tizen-player-overlay').style.display = 'none';
+                } catch (e) {
+                    console.error("Error stopping Tizen player:", e);
+                }
+            } else {
+                console.log("Stopping Web Player");
+                const player = $('#web-video-player');
+                player.pause();
+                player.src = '';
+                player.style.display = 'none';
+                player.ontimeupdate = null; // Clear listener
+                player.onloadedmetadata = null;
+                // Clear subtitle tracks
+                const oldTracks = player.querySelectorAll('track');
+                oldTracks.forEach(t => t.remove());
+            }
+        }
+
+    </script>
+</body>
+</html>
