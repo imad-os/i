@@ -3,9 +3,14 @@
     "toWatch": [],
     "watched": {},
     "theme": "theme-default",
-    "xtreamConfig": {
+    "xtreamConfig1": {
         "host": "http://192.168.2.72:8080",
         "username": "u",
-        "password": "p"
+        "password": "p"        
+    },
+    "xtreamConfig": {
+        "host": "http://14605-bass.ott-cdn.me",
+        "username": "d9c87b2270",
+        "password": "670a8c550c12"
     }
 }
