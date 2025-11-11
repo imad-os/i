@@ -323,9 +323,13 @@
                     <h1 id="series-title" class="text-3xl font-bold text-main mt-4">Series Title</h1>
                     <div class="flex items-center gap-4 mt-2">
                         <p id="series-year" class="text-lg text-alt">Year</p>
-                        <!-- NEW FAVORITE BUTTON -->
+                        <!-- FAVORITE BUTTON -->
                         <button id="series-fav-button" class="nav-item-sm p-2 rounded-full bg-card text-main">
                             <!-- Heart icon will be injected by JS -->
+                        </button>
+                        <!-- NEW WATCH LATER BUTTON -->
+                        <button id="series-watch-later-button" class="nav-item-sm p-2 rounded-full bg-card text-main">
+                            <!-- Bookmark icon will be injected by JS -->
                         </button>
                     </div>
                     <p id="series-plot" class="text-sm text-alt mt-4">Plot description will load here...</p>
@@ -388,6 +392,10 @@
                         <button id="clear-watched-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
                             Clear Watched Progress
                         </button>
+                        <!-- NEW: Clear To Watch Button -->
+                        <button id="clear-towatch-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear To Watch List
+                        </button>
                     </div>
                 </div>
             </div>
@@ -448,8 +456,12 @@
                     <button id="modal-close-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-alt text-main hover:bg-opacity-80 transition-colors">
                         Close
                     </button>
-                    <!-- NEW FAVORITE BUTTON -->
-                    <button id="modal-fav-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors ml-auto">
+                    <!-- NEW WATCH LATER BUTTON -->
+                    <button id="modal-watch-later-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors ml-auto">
+                        <!-- Bookmark icon will be injected by JS -->
+                    </button>
+                    <!-- FAVORITE BUTTON -->
+                    <button id="modal-fav-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors">
                         <!-- Heart icon will be injected by JS -->
                     </button>
                 </div>
@@ -465,6 +477,7 @@
         let currentUsername = '';
         const defaultUserSettings = {
             favorites: [], // Array of stream_ids
+            toWatch: [], // NEW: Array of stream_ids for "To Watch"
             watched: {}, // { id: { progress_sec, duration_sec, type, item, episode? } }
             theme: 'theme-default',
             xtreamConfig: {
@@ -573,6 +586,14 @@
                     showError('Watched progress cleared.');
                 }
             });
+            // NEW: Clear To Watch Listener
+            $('#clear-towatch-button').addEventListener('click', () => {
+                 if (confirm('Are you sure you want to clear your "To Watch" list?')) {
+                    userSettings.toWatch = [];
+                    saveUserSettings();
+                    showError('"To Watch" list cleared.');
+                }
+            });
         }
         
         function setupKeyListeners() {
@@ -615,6 +636,14 @@
                             toggleFavorite(focusedItem.dataset.streamId, focusedItem.dataset.type, JSON.parse(focusedItem.dataset.item));
                         }
                     }
+                    // NEW: 'w' key for Watch Later
+                    if (e.key === 'w') {
+                        // Toggle watch later on the focused item
+                        const focusedItem = document.activeElement;
+                        if (focusedItem && focusedItem.dataset.streamId) {
+                            toggleWatchLater(focusedItem.dataset.streamId, focusedItem.dataset.type, JSON.parse(focusedItem.dataset.item));
+                        }
+                    }
                 }
             });
         }
@@ -645,7 +674,8 @@
                  focusableItems = Array.from(activePage.querySelectorAll('#category-grid .nav-item, #content-grid .nav-item'));
             } else if (activePage.id === 'page-series-details') {
                 // Special nav for series page (Seasons + Episodes)
-                focusableItems = Array.from(activePage.querySelectorAll('#series-seasons-tabs .nav-item, #series-episodes-list .nav-item'));
+                // UPDATED: Include new buttons
+                focusableItems = Array.from(activePage.querySelectorAll('#series-fav-button, #series-watch-later-button, #series-seasons-tabs .nav-item, #series-episodes-list .nav-item'));
             } else if (activePage.id === 'page-main') {
                  // Only focus the three main category buttons
                  focusableItems = Array.from(activePage.querySelectorAll('[onclick*="loadCategories"]'));
@@ -774,7 +804,12 @@
                 targetPage.scrollTop = 0; // Scroll to top
                 
                 // Focus the first item
-                const firstItem = targetPage.querySelector('.nav-item, .nav-item-sm');
+                let firstItem = targetPage.querySelector('.nav-item, .nav-item-sm');
+                // NEW: Specific focus for series page
+                if (pageId === 'page-series-details') {
+                    firstItem = targetPage.querySelector('#series-fav-button, #series-watch-later-button, .nav-item, .nav-item-sm');
+                }
+                
                 if (firstItem) {
                     // Use a small timeout to ensure focus works after display:block
                     setTimeout(() => firstItem.focus(), 50);
@@ -949,6 +984,7 @@
                     },
                     // Ensure nested objects exist
                     favorites: userSettings.favorites || [],
+                    toWatch: userSettings.toWatch || [], // NEW
                     watched: userSettings.watched || {},
                 };
             } else {
@@ -959,23 +995,60 @@
             loadTheme();
         }
         
-        function handleUserLogin() {
+        // --- UPDATED handleUserLogin ---
+        async function handleUserLogin() {
             const username = $('#username').value.trim();
             if (!username) {
                 showError('Please enter a username.');
                 return;
             }
             
-            loadUserSettings(username);
+            showLoader(true);
+            try {
+                // 1. Try to fetch remote settings
+                const response = await fetch(`/user/${username}.json`);
+                if (response.ok) {
+                    console.log("Fetched remote user settings.");
+                    const fetchedSettings = await response.json();
+                    
+                    // Merge remote settings with defaults
+                    userSettings = {
+                        ...defaultUserSettings,
+                        ...fetchedSettings,
+                        xtreamConfig: {
+                            ...defaultUserSettings.xtreamConfig,
+                            ...(fetchedSettings.xtreamConfig || {})
+                        },
+                        favorites: fetchedSettings.favorites || [],
+                        toWatch: fetchedSettings.toWatch || [],
+                        watched: fetchedSettings.watched || {},
+                    };
+                    
+                } else {
+                    // 2. No remote settings, fall back to localStorage
+                    console.log("No remote settings found, loading from localStorage.");
+                    loadUserSettings(username); // This loads from localStorage or creates new
+                }
+            } catch (e) {
+                // 3. Fetch failed (e.g., offline), fall back to localStorage
+                console.warn("Fetch failed, loading from localStorage.", e);
+                loadUserSettings(username); // This loads from localStorage or creates new
+            } finally {
+                showLoader(false);
+                currentUsername = username;
+                localStorage.setItem('iptv-last-user', username);
+                loadTheme();
+                saveUserSettings(); // Save merged settings to localStorage
+            }
             
-            // Check if API is configured
+            // 4. Check if API is configured
             if (userSettings.xtreamConfig && userSettings.xtreamConfig.host) {
                 // Test API config
                 handleApiConnect(null,true); // true = isAutoLogin
             } else {
-                // Need to configure API
+                // 5. Need to configure API
                 $('#api-username').textContent = username;
-                // Pre-fill fields from settings
+                // Pre-fill fields from settings (which might be from user.json)
                 $('#host').value = userSettings.xtreamConfig.host || '';
                 $('#api-user').value = userSettings.xtreamConfig.username || '';
                 $('#api-pass').value = userSettings.xtreamConfig.password || '';
@@ -1008,6 +1081,10 @@
                 console.log(isAutoLogin)
                 console.log('Validation failed. One or more fields are empty.'); // DEBUG
                 if (!isAutoLogin) showError('Please fill in all fields.');
+                // Pre-fill fields with the data that just failed
+                $('#host').value = config.host || '';
+                $('#api-user').value = config.username || '';
+                $('#api-pass').value = config.password || '';
                 showPage('page-api-details');
                 return;
             }
@@ -1272,12 +1349,59 @@
             // Need to save the full item for "Favorites" category
             // We'll store it in the 'watched' object as it can hold item data
             const key = type === 'series' ? item.series_id : item.stream_id;
+            // Ensure item type is stored correctly for filtering
+            const itemType = type === 'series' ? 'series' : (item.stream_type || type);
             if (!userSettings.watched[key]) {
-                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: type, item: item };
+                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
+            } else {
+                 // Update type if it's missing, e.g. from an old 'watched' entry
+                 userSettings.watched[key].type = itemType;
+                 userSettings.watched[key].item = item; // Update item
             }
             
             saveUserSettings();
         }
+        
+        // --- NEW "TO WATCH" ---
+        function isToWatch(stream_id) {
+            return userSettings.toWatch.includes(String(stream_id));
+        }
+        
+        function toggleWatchLater(stream_id, type, item) {
+             if (!stream_id || !type || !item) {
+                 const focusedItem = document.activeElement;
+                 stream_id = focusedItem.dataset.streamId;
+                 type = focusedItem.dataset.type;
+                 item = JSON.parse(focusedItem.dataset.item);
+            }
+
+            const idStr = String(stream_id);
+            const bookmarkIcon = $(`#towatch-icon-${idStr}`); // For grid (not yet implemented)
+            
+            if (isToWatch(idStr)) {
+                userSettings.toWatch = userSettings.toWatch.filter(id => id !== idStr);
+                if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(false); // Update UI
+                console.log("Removed from To Watch");
+            } else {
+                userSettings.toWatch.push(idStr);
+                if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(true); // Update UI
+                console.log("Added to To Watch");
+            }
+            
+            // Need to save the full item for "To Watch" category
+            // We'll store it in the 'watched' object as it can hold item data
+            const key = type === 'series' ? item.series_id : item.stream_id;
+            const itemType = type === 'series' ? 'series' : (item.stream_type || type);
+            if (!userSettings.watched[key]) {
+                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
+            } else {
+                 userSettings.watched[key].type = itemType;
+                 userSettings.watched[key].item = item; // Update item
+            }
+            
+            saveUserSettings();
+        }
+        
         
         /**
          * Gets watched progress for a VOD item or a Series.
@@ -1336,7 +1460,15 @@
                 return; // Don't save progress for Live TV
             }
             
-            userSettings.watched[idStr] = progressData;
+            // Don't overwrite a full 'watched' item with a 'progress' item
+            // e.g. if it was just saved for favorites
+            const existing = userSettings.watched[idStr];
+            if (existing) {
+                userSettings.watched[idStr] = { ...existing, ...progressData };
+            } else {
+                userSettings.watched[idStr] = progressData;
+            }
+
             // Note: We don't call saveUserSettings() here to avoid spamming localStorage
             // It's called by the saveProgressInterval instead.
         }
@@ -1358,27 +1490,57 @@
                 const grid = $('#category-grid');
                 grid.innerHTML = ''; // Clear old
                 
-                // Add custom categories
+                // --- ADD CUSTOM CATEGORIES ---
+                
+                // 1. Favorites (NOW FOR ALL TYPES)
+                if (userSettings.favorites.length > 0) {
+                    // Get all favorite items from the 'watched' cache
+                    const favItems = userSettings.favorites
+                        .map(id => {
+                            const watchedItem = Object.values(userSettings.watched).find(w => 
+                                (w.item.stream_id == id || w.item.series_id == id)
+                            );
+                            return watchedItem ? watchedItem : null; // Return the whole entry (item + type)
+                        })
+                        .filter(entry => {
+                            if (!entry || !entry.item) return false;
+                            if (type === 'live') return entry.type === 'live';
+                            if (type === 'vod') return entry.type === 'vod';
+                            if (type === 'series') return entry.type === 'series';
+                            return false;
+                        });
+                        
+                    if (favItems.length > 0) {
+                         grid.appendChild(createCategoryCard('Favorites', 'favorites', type, { special: 'favorites' }));
+                    }
+                }
+                
+                // 2. Continue Watching / To Watch (VOD/Series only)
                 if (type === 'vod' || type === 'series') {
-                    // 1. Continue Watching
+                    // "Continue Watching"
                     const watchedItems = Object.values(userSettings.watched).filter(w => w.type === type && w.progress_sec > 0);
                     if (watchedItems.length > 0) {
                         grid.appendChild(createCategoryCard('Continue Watching', 'watched', type, { special: 'watched' }));
                     }
-                    // 2. Favorites
-                    if (userSettings.favorites.length > 0) {
-                        const favItems = userSettings.favorites
+                    
+                    // NEW: "To Watch"
+                    if (userSettings.toWatch.length > 0) {
+                         const toWatchItems = userSettings.toWatch
                             .map(id => {
-                                // Find item in watched cache
                                 const watchedItem = Object.values(userSettings.watched).find(w => 
                                     (w.item.stream_id == id || w.item.series_id == id)
                                 );
-                                return watchedItem ? watchedItem.item : null;
+                                return watchedItem ? watchedItem : null;
                             })
-                            .filter(item => item && (item.stream_type === type || (item.series_id && type === 'series'))); // Match type
+                            .filter(entry => {
+                                if (!entry || !entry.item) return false;
+                                if (type === 'vod') return entry.type === 'vod';
+                                if (type === 'series') return entry.type === 'series';
+                                return false;
+                            });
                             
-                        if (favItems.length > 0) {
-                             grid.appendChild(createCategoryCard('Favorites', 'favorites', type, { special: 'favorites' }));
+                        if (toWatchItems.length > 0) {
+                             grid.appendChild(createCategoryCard('To Watch', 'toWatch', type, { special: 'toWatch' }));
                         }
                     }
                 }
@@ -1419,9 +1581,31 @@
                          const watchedItem = Object.values(userSettings.watched).find(w => 
                             (w.item.stream_id == id || w.item.series_id == id)
                         );
-                        return watchedItem ? watchedItem.item : null;
+                        return watchedItem ? watchedItem : null;
                     })
-                    .filter(item => item && (item.stream_type === type || (item.series_id && type === 'series'))); // Match type
+                    .filter(entry => { // Filter by type
+                        if (!entry || !entry.item) return false;
+                        if (type === 'live') return entry.type === 'live';
+                        if (type === 'vod') return entry.type === 'vod';
+                        if (type === 'series') return entry.type === 'series';
+                        return false;
+                    })
+                    .map(entry => entry.item); // Get the item
+            } else if (context.special === 'toWatch') { // NEW: Handle 'toWatch'
+                 items = userSettings.toWatch
+                    .map(id => {
+                         const watchedItem = Object.values(userSettings.watched).find(w => 
+                            (w.item.stream_id == id || w.item.series_id == id)
+                        );
+                        return watchedItem ? watchedItem : null;
+                    })
+                    .filter(entry => { // Filter by type
+                        if (!entry || !entry.item) return false;
+                        if (type === 'vod') return entry.type === 'vod';
+                        if (type === 'series') return entry.type === 'series';
+                        return false;
+                    })
+                    .map(entry => entry.item); // Get the item
             } else {
                 let action = '';
                 if (type === 'live') action = 'get_live_streams';
@@ -1440,6 +1624,8 @@
 
                 if (items.length === 0) {
                     grid.innerHTML = `<p class="text-alt col-span-full">No items found.</p>`;
+                    showPage('page-content'); // Show page even if empty
+                    pushToNavStack('page-content', { type, categoryId, categoryName, context });
                     return;
                 }
 
@@ -1531,6 +1717,14 @@
              '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
         }
         
+        // NEW: Icon for Watch Later
+        function getWatchLaterIcon(isToWatch) {
+            return isToWatch ?
+            '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-primary" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-3.5L5 18V4z" /></svg>' :
+            '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>';
+        }
+
+        
         // === SERIES IMPLEMENTATION ===
         
         async function loadSeriesInfo(seriesItem) {
@@ -1546,26 +1740,35 @@
                 $('#series-plot').textContent = info.info.plot || 'No description available.';
                 $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
 
-                // --- NEW FAV BUTTON LOGIC ---
-                const seriesFavButton = $('#series-fav-button');
+                // Create a complete item from the available info to save to favorites/toWatch
+                const fullSeriesItem = { ...seriesItem, ...info.info, series_id: seriesItem.series_id, stream_type: 'series' };
                 const seriesId = seriesItem.series_id;
-                
-                // Create a complete item from the available info to save to favorites
-                const fullSeriesItem = { ...seriesItem, ...info.info, series_id: seriesItem.series_id };
 
+                // --- FAV BUTTON LOGIC ---
+                const seriesFavButton = $('#series-fav-button');
                 const updateSeriesFavIcon = () => {
                     seriesFavButton.innerHTML = getHeartIcon(isFavorite(seriesId));
                 };
-
                 seriesFavButton.onclick = (e) => {
                     e.stopPropagation();
-                    // Pass the full item so it can be saved for the favorites page
                     toggleFavorite(seriesId, 'series', fullSeriesItem); 
-                    updateSeriesFavIcon(); // Update icon immediately
+                    updateSeriesFavIcon();
                 };
+                updateSeriesFavIcon();
                 
-                updateSeriesFavIcon(); // Set initial state
-                // --- END NEW FAV BUTTON LOGIC ---
+                // --- NEW WATCH LATER LOGIC ---
+                const seriesWatchLaterButton = $('#series-watch-later-button');
+                const updateSeriesWatchLaterIcon = () => {
+                    seriesWatchLaterButton.innerHTML = getWatchLaterIcon(isToWatch(seriesId));
+                };
+                seriesWatchLaterButton.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleWatchLater(seriesId, 'series', fullSeriesItem);
+                    updateSeriesWatchLaterIcon();
+                };
+                updateSeriesWatchLaterIcon();
+                // --- END NEW LOGIC ---
+
 
                 // 2. Populate Seasons
                 const seasonTabs = $('#series-seasons-tabs');
@@ -1576,7 +1779,7 @@
                      $('#series-episodes-list').innerHTML = '<p class="text-alt">No episodes found for this series.</p>';
                      showLoader(false);
                      showPage('page-series-details');
-                     pushToNavStack('page-series-details', { seriesItem });
+                     pushToNavStack('page-series-details', { seriesItem: fullSeriesItem }); // Pass full item
                      return;
                 }
 
@@ -1592,7 +1795,7 @@
                         $$('.season-tab').forEach(t => t.classList.remove('active'));
                         tab.classList.add('active');
                         // Load episodes
-                        loadSeasonEpisodes(episodesBySeason[seasonNum], seriesItem);
+                        loadSeasonEpisodes(episodesBySeason[seasonNum], fullSeriesItem); // Pass full item
                     };
                     seasonTabs.appendChild(tab);
                 });
@@ -1600,7 +1803,7 @@
                 // 3. Load First Season's Episodes
                 if (seasonNumbers.length > 0) {
                     const firstSeasonKey = seasonNumbers[0];
-                    loadSeasonEpisodes(episodesBySeason[firstSeasonKey], seriesItem);
+                    loadSeasonEpisodes(episodesBySeason[firstSeasonKey], fullSeriesItem); // Pass full item
                     // Set first tab as active
                     setTimeout(() => {
                          const firstTab = $('.season-tab');
@@ -1609,7 +1812,7 @@
                 }
 
                 showPage('page-series-details');
-                pushToNavStack('page-series-details', { seriesItem });
+                pushToNavStack('page-series-details', { seriesItem: fullSeriesItem }); // Pass full item
 
             } catch (e) {
                 console.error("Error loading series info:", e);
@@ -1723,25 +1926,34 @@
             $('#modal-movie-cast').textContent = info.info.cast || 'N/tA';
             $('#modal-movie-genre').textContent = info.info.genre || 'N/A';
             
-            // --- NEW FAV BUTTON LOGIC ---
-            const modalFavButton = $('#modal-fav-button');
-            const streamId = item.stream_id;
-            
-            // Create a complete item from the available info to save to favorites
+            // Create a complete item from the available info to save
             const fullVodItem = { ...item, ...info.info, stream_id: item.stream_id, stream_type: 'vod' };
+            const streamId = item.stream_id;
 
+            // --- FAV BUTTON LOGIC ---
+            const modalFavButton = $('#modal-fav-button');
             const updateModalFavIcon = () => {
                 modalFavButton.innerHTML = getHeartIcon(isFavorite(streamId));
             };
-            
             modalFavButton.onclick = (e) => {
                 e.stopPropagation();
                 toggleFavorite(streamId, 'vod', fullVodItem);
-                updateModalFavIcon(); // Update icon immediately
+                updateModalFavIcon();
             };
+            updateModalFavIcon();
             
-            updateModalFavIcon(); // Set initial state
-            // --- END NEW FAV BUTTON LOGIC ---
+            // --- NEW WATCH LATER LOGIC ---
+            const modalWatchLaterButton = $('#modal-watch-later-button');
+            const updateModalWatchLaterIcon = () => {
+                modalWatchLaterButton.innerHTML = getWatchLaterIcon(isToWatch(streamId));
+            };
+            modalWatchLaterButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleWatchLater(streamId, 'vod', fullVodItem);
+                updateModalWatchLaterIcon();
+            };
+            updateModalWatchLaterIcon();
+            // --- END NEW LOGIC ---
 
             // Set up button actions
             $('#modal-play-button').onclick = () => {
