@@ -226,6 +226,11 @@
             background-color: var(--color-primary);
             transition: width 0.2s ease;
         }
+        #current-time {
+            margin: auto;
+            font-size: 1.525rem;
+            line-height: 1.75rem;
+        }
     </style>
 </head>
 <body class="theme-default">
@@ -244,12 +249,13 @@
             
             <!-- Center Slot: Time / Title -->
             <div class="w-1/3 text-center">
-                <div id="current-time" class="text-lg font-semibold text-main">--:--</div>
                 <h2 id="global-header-title" class="text-2xl font-bold text-main hidden truncate">Page Title</h2>
             </div>
 
             <!-- Right Slot: Settings -->
             <div class="w-1/3 flex justify-end">
+                <div id="current-time" class="font-semibold text-main" >--:--</div>
+
                 <button onclick="showSettingsPage()" class="nav-item-sm p-2 bg-card rounded-full focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-main" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
@@ -529,7 +535,7 @@
         // --- VIRTUALIZATION STATE ---
         let virtualListState = {
             config: {
-                bufferRows: 2, // Tunable: How many rows to render above/below viewport
+                bufferRows: 4, // Tunable: How many rows to render above/below viewport
                 virtualizeThreshold: 100 // Only virtualize lists with more than 100 items
             },
             itemHeight: 250, // Default, will be measured
@@ -844,12 +850,10 @@
             const globalHeader = $('#global-header');
             const globalBackButton = $('#global-back-button');
             const globalTitle = $('#global-header-title');
-            const globalTime = $('#current-time');
 
             // Default state (for main menu)
             globalBackButton.style.display = 'none';
             globalTitle.style.display = 'none';
-            globalTime.style.display = 'block';
 
             if (pageId === 'page-player') {
                 globalHeader.style.display = 'none';
@@ -864,7 +868,6 @@
                 globalHeader.style.display = 'flex';
                 globalBackButton.style.display = 'block';
                 globalTitle.style.display = 'block';
-                globalTime.style.display = 'none';
             }
             
             // --- VIRTUALIZATION CLEANUP ---
