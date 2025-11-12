@@ -1684,7 +1684,8 @@
          * @returns {HTMLElement} The card element.
          */
         function createContentCard(item, type, context = {}) {
-            const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image';
+            //const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=Loading%20...';
+            const poster = 'https://placehold.co/400x600/1F2937/FFFFFF?text='+item.name;
             const name = item.name;
             const rating = item.rating_5based || item.rating || 0;
             const stream_id = item.stream_id || item.series_id;
@@ -2042,8 +2043,7 @@
 
                 // 1. Populate Details
                 $('#global-header-title').textContent = info.info.name || seriesItem.name;
-                //$('#series-cover-image').src = info.info.cover || seriesItem.cover || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
-                $('#series-cover-image').src = 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
+                $('#series-cover-image').src = info.info.cover || seriesItem.cover || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
                 $('#series-title').textContent = info.info.name || seriesItem.name;
                 $('#series-plot').textContent = info.info.plot || 'No description available.';
                 $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
