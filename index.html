@@ -218,8 +218,9 @@
         
         /* Watched Progress Bar */
         .progress-bar {
-            height: 4px;
-            background-color: #555; /* Dim background */
+            height: 6px;
+            background-color: #555;
+            margin-bottom: 5px;
         }
         .progress-bar-inner {
             height: 100%;
@@ -536,7 +537,7 @@
         let virtualListState = {
             config: {
                 bufferRows: 4, // Tunable: How many rows to render above/below viewport
-                virtualizeThreshold: 100 // Only virtualize lists with more than 100 items
+                virtualizeThreshold: 50 // Only virtualize lists with more than 100 items
             },
             itemHeight: 250, // Default, will be measured
             columns: 4,      // Default, will be measured
@@ -1714,6 +1715,14 @@
                 const e = String(progressInfo.episode.episode_num).padStart(2, '0');
                 episodeTag = `<div class="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-xs font-bold text-main">S${s}E${e}</div>`;
             }
+            let progress_bar= "";
+            if(progressPercent > 0){
+                progress_bar = `
+                <div class="progress-bar w-full">
+                    <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+                </div>`
+                
+            }
 
             const card = document.createElement('div');
             card.className = 'nav-item bg-card rounded-lg overflow-hidden shadow-lg cursor-pointer aspect-[2/3] relative transition-all flex flex-col';
@@ -1738,15 +1747,11 @@
                     </button>
                     <!-- Name -->
                     <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                        <!-- Progress Bar -->
+                        ${progress_bar}
                         <h4 class="font-semibold text-main truncate">${name}</h4>
                     </div>
                 </div>
-                <!-- Progress Bar -->
-                ${progressPercent > 0 ? `
-                <div class="progress-bar w-full">
-                    <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
-                </div>
-                ` : ''}
             `;
             
             card.onclick = () => {
@@ -1880,30 +1885,32 @@
         // --- VIRTUALIZATION: Render Function ---
         /**
          * Renders the visible "window" of items.
+         *
+         * *** MODIFIED to preserve focus during navigation ***
          */
-        function renderVirtualWindow() {
+         function renderVirtualWindow() {
             if (!virtualListState.isVirtual) return;
 
-            const { 
-                config, 
-                fullData, 
-                type, 
-                context, 
-                pageElement, 
-                windowElement, 
-                itemHeight, 
-                columns
-            } = virtualListState;
-
+            const { config, fullData, type, context, pageElement, windowElement, itemHeight, columns } = virtualListState;
+            
             if (!pageElement || !windowElement || itemHeight <= 0 || columns <= 0) return;
+
+            // --- BEGIN FOCUS PRESERVATION ---
+            let focusedStreamId = null;
+            const activeEl = document.activeElement;
+            // Check if the focused element is one of our virtual items
+            if (activeEl && activeEl.dataset.streamId && windowElement.contains(activeEl)) {
+                focusedStreamId = activeEl.dataset.streamId;
+            }
+            // --- END FOCUS PRESERVATION ---
 
             const scrollTop = pageElement.scrollTop;
             const pageHeight = pageElement.clientHeight;
-            
+
             // Calculate row window
             const visibleRows = Math.ceil(pageHeight / itemHeight);
             const totalRows = Math.ceil(fullData.length / columns);
-
+            
             const startRow = Math.max(0, Math.floor(scrollTop / itemHeight) - config.bufferRows);
             const endRow = Math.min(
                 totalRows, // Total rows
@@ -1913,28 +1920,38 @@
             // Calculate item window
             const startIndex = Math.max(0, startRow * columns);
             const endIndex = Math.min(fullData.length, endRow * columns);
-            
+
             // Calculate the Y offset for the window
             const offsetY = startRow * itemHeight;
-
+            
             // Apply transform to position the window
             windowElement.style.transform = `translateY(${offsetY}px)`;
-            
+
             // Render items
             windowElement.innerHTML = ''; // Clear *only* the window
             const fragment = document.createDocumentFragment();
+            console.log(`startIndex : ${startIndex}   endIndex: ${endIndex}`)
             for (let i = startIndex; i < endIndex; i++) {
                 const item = fullData[i];
-                if (item) {
-                    const card = createContentCard(item, type, context);
-                    fragment.appendChild(card);
-                }
+                // Use the same context that was passed to loadContentGrid
+                const card = createContentCard(item, type, context); 
+                fragment.appendChild(card);
             }
+            
             windowElement.appendChild(fragment);
 
-            // console.log(`Rendered items ${startIndex} to ${endIndex}`);
+            // --- BEGIN FOCUS RESTORATION ---
+            if (focusedStreamId) {
+                const newFocusedEl = windowElement.querySelector(`[data-stream-id="${focusedStreamId}"]`);
+                console.log("newFocusedEl", newFocusedEl)
+                if (newFocusedEl) {
+                    // Restore focus, preventing the browser from scrolling to it,
+                    // as it's already in view (or its position is managed by the virtual list)
+                    newFocusedEl.focus({ preventScroll: true });
+                }
+            }
+            // --- END FOCUS RESTORATION ---
         }
-        
         // --- UPDATED loadContent ---
         /**
          * Loads content (Live, VOD, Series) and decides whether to virtualize.
