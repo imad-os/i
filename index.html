@@ -384,7 +384,7 @@
         </div>
         
         <!-- ===== PAGE: SETTINGS ===== -->
-        <div id="page-settings" class="pagepage-with-padding  p-10 pt-20">
+        <div id="page-settings" class="pagepage-with-padding  p-10 pt-20" style="display: none;">
              <!-- Header removed -->
             <div class="p-4 max-w-2xl mx-auto space-y-6">
                 <!-- Theme Settings -->
@@ -548,8 +548,7 @@
             windowElement: null,
             isVirtual: false, // Flag to know if virtualization is active
             lastScrollTop: 0,
-            resizeTimer: null,
-            pendingFocusIndex: null // <-- NEW: For keyboard navigation
+            resizeTimer: null
         };
         // --- END VIRTUALIZATION STATE ---
 
@@ -566,7 +565,7 @@
             if (initialHash) {
                 console.log("Initial hash detected:", initialHash);
                 // Clean the URL bar so refreshes don't stack hashes or cause issues
-                history.replaceState(null, '', 'index.html');
+                history.replaceState(null, '', '/');
             }
             // --- END HASH HANDLING ---
 
@@ -781,93 +780,20 @@
             // Simple grid logic for grids
             const grid = activePage.querySelector('#content-grid, #category-grid, #virtual-grid-window');
             if (grid && !parentSelector) { // Only apply grid logic if not in modal
+                // Use measured columns for virtual grid
+                const columns = virtualListState.isVirtual ? virtualListState.columns : window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
+                
+                let nextIndex = -1;
+                if (key === 'ArrowRight') nextIndex = currentIndex + 1;
+                else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
+                else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
+                else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
 
-                // --- VIRTUALIZATION-AWARE NAVIGATION ---
-                if (virtualListState.isVirtual && activePage.id === 'page-content') {
-                    const { columns, itemHeight, fullData, pageElement } = virtualListState;
-                    if (currentIndex < 0 || !focusableItems[currentIndex]) {
-                        // Something is wrong, focus first item
-                        focusableItems[0]?.focus();
-                        return;
-                    }
-                    
-                    const currentElement = focusableItems[currentIndex];
-                    if (!currentElement.dataset.virtualIndex) {
-                        console.error("Focused item has no virtual index!", currentElement);
-                        return; // Should not happen
-                    }
-                    
-                    const currentVirtualIndex = parseInt(currentElement.dataset.virtualIndex, 10);
-                    let nextVirtualIndex = -1;
-                    const currentRow = Math.floor(currentVirtualIndex / columns);
-
-                    if (key === 'ArrowRight') nextVirtualIndex = currentVirtualIndex + 1;
-                    else if (key === 'ArrowLeft') nextVirtualIndex = currentVirtualIndex - 1;
-                    else if (key === 'ArrowDown') nextVirtualIndex = currentVirtualIndex + columns;
-                    else if (key === 'ArrowUp') nextVirtualIndex = currentVirtualIndex - columns;
-
-                    // --- Boundary Checks ---
-                    // 1. Check against full data length
-                    if (nextVirtualIndex < 0 || nextVirtualIndex >= fullData.length) {
-                        return; // Reached beginning or end of list
-                    }
-                    
-                    // 2. Check for row wrapping on Left/Right
-                    const nextRow = Math.floor(nextVirtualIndex / columns);
-                    if (key === 'ArrowRight' && nextRow !== currentRow) {
-                        return; // Don't wrap to next row
-                    }
-                    if (key === 'ArrowLeft' && nextRow !== currentRow) {
-                        return; // Don't wrap to previous row
-                    }
-                    // --- End Boundary Checks ---
-
-                    // Try to find the element in the *rendered* window
-                    const nextElement = grid.querySelector(`.nav-item[data-virtual-index="${nextVirtualIndex}"]`);
-
-                    if (nextElement) {
-                        // --- Case 1: Item is already rendered ---
-                        nextElement.focus();
-                        nextElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        virtualListState.pendingFocusIndex = null; // Clear any pending focus
-                    } else {
-                        // --- Case 2: Item is NOT rendered ---
-                        // Store the index we *want* to focus
-                        virtualListState.pendingFocusIndex = nextVirtualIndex;
-                        
-                        // Calculate target scroll position
-                        const targetRow = Math.floor(nextVirtualIndex / columns);
-                        // Center the target row in the viewport
-                        const pageHeight = pageElement.clientHeight;
-                        const targetScrollTop = (targetRow * itemHeight) - (pageHeight / 2) + (itemHeight / 2);
-                        
-                        console.log(`Scrolling to virtual index ${nextVirtualIndex} at ${targetScrollTop}px`);
-                        pageElement.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                    }
-                    return; // We handled the navigation
-
-                } else {
-                    // --- ORIGINAL NON-VIRTUAL LOGIC ---
-                    const columns = window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
-                    
-                    let nextIndex = -1;
-                    if (key === 'ArrowRight') nextIndex = currentIndex + 1;
-                    else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
-                    else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
-                    else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
-                    
-                    // Boundary check for non-virtual grid
-                    const currentRow = Math.floor(currentIndex / columns);
-                    const nextRow = Math.floor(nextIndex / columns);
-
-                    if (key === 'ArrowRight' && nextRow !== currentRow && nextIndex < focusableItems.length) return;
-                    if (key === 'ArrowLeft' && nextRow !== currentRow && currentIndex > 0) return;
-                    
-                    if (nextIndex >= 0 && nextIndex < focusableItems.length) {
-                        focusableItems[nextIndex].focus();
-                        focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return;
-                    }
+                if (nextIndex >= 0 && nextIndex < focusableItems.length) {
+                    focusableItems[nextIndex].focus();
+                    // Scroll into view - for virtual grid, this will trigger the scroll listener
+                    focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
                 }
             }
             
@@ -917,7 +843,27 @@
             }
         }
 
-
+        function cleanupVirtualisation(){
+            console.log("Cleaning up virtual scroll listener.");
+            if(virtualListState?.pageElement?.onscroll){
+                virtualListState.pageElement.onscroll = null;
+            }
+            // window.onresize is now global, don't null it here, just check in the handler
+            virtualListState.isVirtual = false;
+            virtualListState.fullData = [];
+            
+            // Restore grid
+            if(virtualListState.gridElement) {
+                virtualListState.gridElement.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
+                virtualListState.gridElement.style.height = 'auto';
+                virtualListState.gridElement.style.position = 'static';
+            }
+            if(virtualListState.windowElement) {
+                virtualListState.windowElement.innerHTML = '';
+                virtualListState.windowElement.remove();
+                virtualListState.windowElement = null; // Re-create next time
+            }
+        }
         // === Navigation ===
         function showPage(pageId) {
             // Manage Global Header state
@@ -948,25 +894,9 @@
             // If we are navigating *away* from page-content, clear the listener
             const currentPageEl = $$('.page[style*="block"]')[0];
             if (virtualListState.isVirtual && virtualListState.pageElement && (!currentPageEl || currentPageEl.id !== 'page-content') && pageId !== 'page-content') {
-                console.log("Cleaning up virtual scroll listener.");
-                virtualListState.pageElement.onscroll = null;
-                // window.onresize is now global, don't null it here, just check in the handler
-                virtualListState.isVirtual = false;
-                virtualListState.fullData = [];
-                virtualListState.pendingFocusIndex = null; // Clear pending focus
-                
-                // Restore grid
-                if(virtualListState.gridElement) {
-                    virtualListState.gridElement.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
-                    virtualListState.gridElement.style.height = 'auto';
-                    virtualListState.gridElement.style.position = 'static';
-                }
-                if(virtualListState.windowElement) {
-                    virtualListState.windowElement.innerHTML = '';
-                    virtualListState.windowElement.remove();
-                    virtualListState.windowElement = null; // Re-create next time
-                }
+                cleanupVirtualisation();
             }
+            
             // --- END VIRTUALIZATION ---
 
 
@@ -1756,7 +1686,8 @@
          * @returns {HTMLElement} The card element.
          */
         function createContentCard(item, type, context = {}) {
-            const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image';
+            //const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=Loading%20...';
+            const poster = 'https://placehold.co/400x600/1F2937/FFFFFF?text='+item.name;
             const name = item.name;
             const rating = item.rating_5based || item.rating || 0;
             const stream_id = item.stream_id || item.series_id;
@@ -1780,32 +1711,23 @@
             
             card.innerHTML = `
                 <div class="relative w-full h-full">
-                    <!-- 
-                        Lazy loading is handled by virtualization.
-                        The <img> tag is created just-in-time, so the download starts when the item is rendered.
-                    -->
                     <img src="${poster}" alt="${name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image'">
-                    
                     <!-- Episode Tag (Series Only) -->
                     ${episodeTag}
-                    
                     <!-- Rating -->
                     <div class="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded-full text-xs font-bold text-yellow-400 flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                         <span>${Number(rating).toFixed(1)}</span>
                     </div>
-                    
                     <!-- Favorite Icon -->
                     <button id="fav-icon-${stream_id}" onclick="event.stopPropagation(); toggleFavorite('${stream_id}', '${type}', \`${CSS.escape(JSON.stringify(item))}\`)" class="nav-item-sm absolute bottom-12 left-2 p-1.5 bg-black/70 rounded-full">
                         ${getHeartIcon(isFavorite(stream_id))}
                     </button>
-                    
                     <!-- Name -->
                     <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
                         <h4 class="font-semibold text-main truncate">${name}</h4>
                     </div>
                 </div>
-                
                 <!-- Progress Bar -->
                 ${progressPercent > 0 ? `
                 <div class="progress-bar w-full">
@@ -1850,7 +1772,6 @@
             virtualListState.pageElement = $('#page-content');
             virtualListState.gridElement = $('#content-grid');
             virtualListState.lastScrollTop = -1; // Force initial render
-            virtualListState.pendingFocusIndex = null; // Ensure pending focus is clear
             
             const grid = virtualListState.gridElement;
             const originalClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4';
@@ -1887,13 +1808,26 @@
         /**
          * Measures a sample item to determine column count and item height.
          */
+         function getGridColumns() {
+            const width = window.innerWidth;
+            if (width >= 1024) {
+                return 6; // lg:grid-cols-6
+            } else if (width >= 768) {
+                return 4; // md:grid-cols-4
+            } else if (width >= 640) {
+                return 3; // sm:grid-cols-3
+            } else {
+                return 2; // default grid-cols-2
+            }
+        }
         function measureVirtualItem() {
             const windowEl = virtualListState.windowElement;
             if (!windowEl || virtualListState.fullData.length === 0) return;
 
             // Get columns from computed style
             const gridStyle = window.getComputedStyle(windowEl);
-            virtualListState.columns = gridStyle.getPropertyValue('grid-template-columns').split(' ').length;
+            //virtualListState.columns = gridStyle.getPropertyValue('grid-template-columns').split(' ').length;
+            virtualListState.columns = getGridColumns();
             
             // Measure item height by creating a dummy
             const dummyCard = createContentCard(virtualListState.fullData[0], virtualListState.type, virtualListState.context);
@@ -1909,7 +1843,7 @@
             
             windowEl.removeChild(dummyCard); // Clean up
 
-            if(virtualListState.itemHeight < 50) { // Sanity check
+            if(virtualListState.itemHeight < 50 || isNaN(virtualListState.itemHeight)) { // Sanity check
                 console.warn("Measured item height is very small, using default.");
                 virtualListState.itemHeight = 250; // Fallback
             }
@@ -1980,24 +1914,10 @@
                 const item = fullData[i];
                 if (item) {
                     const card = createContentCard(item, type, context);
-                    card.dataset.virtualIndex = i; // <-- STAMP VIRTUAL INDEX
                     fragment.appendChild(card);
                 }
             }
             windowElement.appendChild(fragment);
-
-            // --- NEW: Handle pending focus from navigation ---
-            if (virtualListState.pendingFocusIndex !== null) {
-                const elToFocus = windowElement.querySelector(`.nav-item[data-virtual-index="${virtualListState.pendingFocusIndex}"]`);
-                if (elToFocus) {
-                    console.log('Focusing pending element:', virtualListState.pendingFocusIndex);
-                    elToFocus.focus();
-                    // Optional: scrollIntoView again to ensure it's centered
-                    elToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    virtualListState.pendingFocusIndex = null; // Clear it
-                }
-            }
-            // --- END NEW ---
 
             // console.log(`Rendered items ${startIndex} to ${endIndex}`);
         }
