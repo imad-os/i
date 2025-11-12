@@ -1837,7 +1837,7 @@
             
             windowEl.removeChild(dummyCard); // Clean up
 
-            if(virtualListState.itemHeight < 50) { // Sanity check
+            if(virtualListState.itemHeight < 50 || isNaN(virtualListState.itemHeight)) { // Sanity check
                 console.warn("Measured item height is very small, using default.");
                 virtualListState.itemHeight = 250; // Fallback
             }
