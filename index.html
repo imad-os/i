@@ -1977,7 +1977,7 @@
             }
 
             if (items && Array.isArray(items)) {
-                $('#global-header-title').textContent = title;
+                $('#global-header-title').textContent = `${title} (${items.length})`;
                 const grid = $('#content-grid');
                 grid.innerHTML = ''; // Clear old
 
