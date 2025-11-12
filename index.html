@@ -747,7 +747,12 @@
             } else if (activePage.id === 'page-content') {
                  // UPDATED: Select from virtual window or regular grid
                  const grid = virtualListState.isVirtual ? virtualListState.windowElement : $('#content-grid');
-                 focusableItems = Array.from(grid.querySelectorAll('.nav-item'));
+                 // *** FIX: Add null check ***
+                 if (grid) {
+                    focusableItems = Array.from(grid.querySelectorAll('.nav-item'));
+                 } else {
+                    focusableItems = [];
+                 }
             } else if (activePage.id === 'page-series-details') {
                 // Special nav for series page (Seasons + Episodes)
                 // UPDATED: Include new buttons
@@ -780,8 +785,16 @@
             // Simple grid logic for grids
             const grid = activePage.querySelector('#content-grid, #category-grid, #virtual-grid-window');
             if (grid && !parentSelector) { // Only apply grid logic if not in modal
-                // Use measured columns for virtual grid
-                const columns = virtualListState.isVirtual ? virtualListState.columns : window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
+                
+                // *** FIX: Determine columns correctly ***
+                let columns = 1;
+                if (activePage.id === 'page-content' && virtualListState.isVirtual) {
+                    columns = virtualListState.columns; // Use stored columns
+                } else {
+                    // Get computed columns for category grid or non-virtual content grid
+                    columns = window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
+                }
+                // *** END FIX ***
                 
                 let nextIndex = -1;
                 if (key === 'ArrowRight') nextIndex = currentIndex + 1;
@@ -1978,11 +1991,18 @@
 
             if (items && Array.isArray(items)) {
                 $('#global-header-title').textContent = `${title} (${items.length})`;
+                
+                // *** FIX: Clean up previous virtual list *before* clearing grid ***
+                if (virtualListState.isVirtual) {
+                    cleanupVirtualisation();
+                }
+                // *** END FIX ***
+                
                 const grid = $('#content-grid');
                 grid.innerHTML = ''; // Clear old
 
                 if (items.length === 0) {
-                    // Ensure grid styles are reset if we were virtualized
+                    // Ensure grid styles are reset (cleanup might have already done this, but safe)
                     grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
                     grid.style.height = 'auto';
                     grid.style.position = 'static';
