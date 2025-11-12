@@ -673,8 +673,30 @@
             document.addEventListener('keydown', (e) => {
                 const activePageId = navigationStack[navigationStack.length - 1]?.pageId;
                 
+                userSettings.keyMap.go_back;
+
+                const nav_buttons = [
+                    userSettings.keyMap.arrow_up,
+                    userSettings.keyMap.arrow_right,
+                    userSettings.keyMap.arrow_down,
+                    userSettings.keyMap.arrow_left,
+                    userSettings.keyMap.enter,
+                ];
+                const keys_names = {
+                    [userSettings.keyMap.arrow_up]: 'arrowUp',
+                    [userSettings.keyMap.arrow_right]: 'arrowRight',
+                    [userSettings.keyMap.arrow_down]: 'arrowDown',
+                    [userSettings.keyMap.arrow_left]: 'arrowLeft',
+                    [userSettings.keyMap.enter]: 'Enter',
+                    [userSettings.keyMap.go_back]: 'Escape',
+                    [userSettings.keyMap.favourite]: 'f',
+                    [userSettings.keyMap.towatch]: 'w',
+                    
+                };
+                const keyname= keys_names[e.keyCode];
+
                 // 1. Global Keys
-                if (e.key === 'Escape') {
+                if (keynameey === 'Escape') {
                     // Check if modal is open
                     if ($('#movie-details-modal').style.display === 'flex') {
                         hideMovieDetailsModal();
@@ -685,24 +707,24 @@
                 }
                 
                 // 2. Navigation Keys (Arrows/Enter)
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+                if ( nav_buttons.includes(e.keyCode)) {
                     e.preventDefault();
-                    if (e.key === 'Enter') {
+                    if (keyname === 'Enter') {
                         document.activeElement?.click();
                         return;
                     }
                     // Check if modal is open and handle nav inside it
                     if ($('#movie-details-modal').style.display === 'flex') {
-                        handleArrowNavigation(e.key, '#movie-details-modal');
+                        handleArrowNavigation(keyname, '#movie-details-modal');
                     } else {
-                        handleArrowNavigation(e.key);
+                        handleArrowNavigation(keyname);
                     }
                     return;
                 }
                 
                 // 3. Context-specific Keys
                 if (activePageId === 'page-content' || (activePageId === 'page-categories' && (navigationStack[navigationStack.length-1].context?.special === 'favorites' || navigationStack[navigationStack.length-1].context?.special === 'watched'))) {
-                    if (e.key === 'f') {
+                    if (keyname === 'f') {
                         // Toggle favorite on the focused item
                         const focusedItem = document.activeElement;
                         if (focusedItem && focusedItem.dataset.streamId) {
@@ -710,7 +732,7 @@
                         }
                     }
                     // NEW: 'w' key for Watch Later
-                    if (e.key === 'w') {
+                    if (keyname === 'w') {
                         // Toggle watch later on the focused item
                         const focusedItem = document.activeElement;
                         if (focusedItem && focusedItem.dataset.streamId) {
@@ -1142,9 +1164,13 @@
                             ...defaultUserSettings.xtreamConfig,
                             ...(fetchedSettings.xtreamConfig || {})
                         },
-                        favorites: fetchedSettings.favorites || [],
+                        favorites : [
+                            ...defaultUserSettings.favorites,
+                            ...fetchedSettings.favorites
+                        ],
                         toWatch: fetchedSettings.toWatch || [],
                         watched: fetchedSettings.watched || {},
+                        keyMap : fetchedSettings.keyMap || defaultUserSettings.keyMap || {},
                     };
                     
                 } else {
