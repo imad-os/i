@@ -548,7 +548,8 @@
             windowElement: null,
             isVirtual: false, // Flag to know if virtualization is active
             lastScrollTop: 0,
-            resizeTimer: null
+            resizeTimer: null,
+            pendingFocusIndex: null // <-- NEW: For keyboard navigation
         };
         // --- END VIRTUALIZATION STATE ---
 
@@ -780,20 +781,93 @@
             // Simple grid logic for grids
             const grid = activePage.querySelector('#content-grid, #category-grid, #virtual-grid-window');
             if (grid && !parentSelector) { // Only apply grid logic if not in modal
-                // Use measured columns for virtual grid
-                const columns = virtualListState.isVirtual ? virtualListState.columns : window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
-                
-                let nextIndex = -1;
-                if (key === 'ArrowRight') nextIndex = currentIndex + 1;
-                else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
-                else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
-                else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
 
-                if (nextIndex >= 0 && nextIndex < focusableItems.length) {
-                    focusableItems[nextIndex].focus();
-                    // Scroll into view - for virtual grid, this will trigger the scroll listener
-                    focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
+                // --- VIRTUALIZATION-AWARE NAVIGATION ---
+                if (virtualListState.isVirtual && activePage.id === 'page-content') {
+                    const { columns, itemHeight, fullData, pageElement } = virtualListState;
+                    if (currentIndex < 0 || !focusableItems[currentIndex]) {
+                        // Something is wrong, focus first item
+                        focusableItems[0]?.focus();
+                        return;
+                    }
+                    
+                    const currentElement = focusableItems[currentIndex];
+                    if (!currentElement.dataset.virtualIndex) {
+                        console.error("Focused item has no virtual index!", currentElement);
+                        return; // Should not happen
+                    }
+                    
+                    const currentVirtualIndex = parseInt(currentElement.dataset.virtualIndex, 10);
+                    let nextVirtualIndex = -1;
+                    const currentRow = Math.floor(currentVirtualIndex / columns);
+
+                    if (key === 'ArrowRight') nextVirtualIndex = currentVirtualIndex + 1;
+                    else if (key === 'ArrowLeft') nextVirtualIndex = currentVirtualIndex - 1;
+                    else if (key === 'ArrowDown') nextVirtualIndex = currentVirtualIndex + columns;
+                    else if (key === 'ArrowUp') nextVirtualIndex = currentVirtualIndex - columns;
+
+                    // --- Boundary Checks ---
+                    // 1. Check against full data length
+                    if (nextVirtualIndex < 0 || nextVirtualIndex >= fullData.length) {
+                        return; // Reached beginning or end of list
+                    }
+                    
+                    // 2. Check for row wrapping on Left/Right
+                    const nextRow = Math.floor(nextVirtualIndex / columns);
+                    if (key === 'ArrowRight' && nextRow !== currentRow) {
+                        return; // Don't wrap to next row
+                    }
+                    if (key === 'ArrowLeft' && nextRow !== currentRow) {
+                        return; // Don't wrap to previous row
+                    }
+                    // --- End Boundary Checks ---
+
+                    // Try to find the element in the *rendered* window
+                    const nextElement = grid.querySelector(`.nav-item[data-virtual-index="${nextVirtualIndex}"]`);
+
+                    if (nextElement) {
+                        // --- Case 1: Item is already rendered ---
+                        nextElement.focus();
+                        nextElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        virtualListState.pendingFocusIndex = null; // Clear any pending focus
+                    } else {
+                        // --- Case 2: Item is NOT rendered ---
+                        // Store the index we *want* to focus
+                        virtualListState.pendingFocusIndex = nextVirtualIndex;
+                        
+                        // Calculate target scroll position
+                        const targetRow = Math.floor(nextVirtualIndex / columns);
+                        // Center the target row in the viewport
+                        const pageHeight = pageElement.clientHeight;
+                        const targetScrollTop = (targetRow * itemHeight) - (pageHeight / 2) + (itemHeight / 2);
+                        
+                        console.log(`Scrolling to virtual index ${nextVirtualIndex} at ${targetScrollTop}px`);
+                        pageElement.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                    }
+                    return; // We handled the navigation
+
+                } else {
+                    // --- ORIGINAL NON-VIRTUAL LOGIC ---
+                    const columns = window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
+                    
+                    let nextIndex = -1;
+                    if (key === 'ArrowRight') nextIndex = currentIndex + 1;
+                    else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
+                    else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
+                    else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
+                    
+                    // Boundary check for non-virtual grid
+                    const currentRow = Math.floor(currentIndex / columns);
+                    const nextRow = Math.floor(nextIndex / columns);
+
+                    if (key === 'ArrowRight' && nextRow !== currentRow && nextIndex < focusableItems.length) return;
+                    if (key === 'ArrowLeft' && nextRow !== currentRow && currentIndex > 0) return;
+                    
+                    if (nextIndex >= 0 && nextIndex < focusableItems.length) {
+                        focusableItems[nextIndex].focus();
+                        focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
                 }
             }
             
@@ -879,6 +953,7 @@
                 // window.onresize is now global, don't null it here, just check in the handler
                 virtualListState.isVirtual = false;
                 virtualListState.fullData = [];
+                virtualListState.pendingFocusIndex = null; // Clear pending focus
                 
                 // Restore grid
                 if(virtualListState.gridElement) {
@@ -1775,6 +1850,7 @@
             virtualListState.pageElement = $('#page-content');
             virtualListState.gridElement = $('#content-grid');
             virtualListState.lastScrollTop = -1; // Force initial render
+            virtualListState.pendingFocusIndex = null; // Ensure pending focus is clear
             
             const grid = virtualListState.gridElement;
             const originalClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4';
@@ -1904,10 +1980,24 @@
                 const item = fullData[i];
                 if (item) {
                     const card = createContentCard(item, type, context);
+                    card.dataset.virtualIndex = i; // <-- STAMP VIRTUAL INDEX
                     fragment.appendChild(card);
                 }
             }
             windowElement.appendChild(fragment);
+
+            // --- NEW: Handle pending focus from navigation ---
+            if (virtualListState.pendingFocusIndex !== null) {
+                const elToFocus = windowElement.querySelector(`.nav-item[data-virtual-index="${virtualListState.pendingFocusIndex}"]`);
+                if (elToFocus) {
+                    console.log('Focusing pending element:', virtualListState.pendingFocusIndex);
+                    elToFocus.focus();
+                    // Optional: scrollIntoView again to ensure it's centered
+                    elToFocus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    virtualListState.pendingFocusIndex = null; // Clear it
+                }
+            }
+            // --- END NEW ---
 
             // console.log(`Rendered items ${startIndex} to ${endIndex}`);
         }
