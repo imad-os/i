@@ -843,7 +843,25 @@
             }
         }
 
-
+        function cleanupVirtualisation(){
+            console.log("Cleaning up virtual scroll listener.");
+                virtualListState.pageElement.onscroll = null;
+                // window.onresize is now global, don't null it here, just check in the handler
+                virtualListState.isVirtual = false;
+                virtualListState.fullData = [];
+                
+                // Restore grid
+                if(virtualListState.gridElement) {
+                    virtualListState.gridElement.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
+                    virtualListState.gridElement.style.height = 'auto';
+                    virtualListState.gridElement.style.position = 'static';
+                }
+                if(virtualListState.windowElement) {
+                    virtualListState.windowElement.innerHTML = '';
+                    virtualListState.windowElement.remove();
+                    virtualListState.windowElement = null; // Re-create next time
+                }
+        }
         // === Navigation ===
         function showPage(pageId) {
             // Manage Global Header state
@@ -874,24 +892,9 @@
             // If we are navigating *away* from page-content, clear the listener
             const currentPageEl = $$('.page[style*="block"]')[0];
             if (virtualListState.isVirtual && virtualListState.pageElement && (!currentPageEl || currentPageEl.id !== 'page-content') && pageId !== 'page-content') {
-                console.log("Cleaning up virtual scroll listener.");
-                virtualListState.pageElement.onscroll = null;
-                // window.onresize is now global, don't null it here, just check in the handler
-                virtualListState.isVirtual = false;
-                virtualListState.fullData = [];
-                
-                // Restore grid
-                if(virtualListState.gridElement) {
-                    virtualListState.gridElement.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
-                    virtualListState.gridElement.style.height = 'auto';
-                    virtualListState.gridElement.style.position = 'static';
-                }
-                if(virtualListState.windowElement) {
-                    virtualListState.windowElement.innerHTML = '';
-                    virtualListState.windowElement.remove();
-                    virtualListState.windowElement = null; // Re-create next time
-                }
+                //cleanupVirtualisation();
             }
+            cleanupVirtualisation();
             // --- END VIRTUALIZATION ---
 
 
