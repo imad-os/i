@@ -1803,9 +1803,6 @@
          * Measures a sample item to determine column count and item height.
          */
         function measureVirtualItem() {
-            const gridWidth = grid.clientWidth || window.innerWidth;
-            const gridHeight = grid.clientHeight || window.innerHeight;
-
             const windowEl = virtualListState.windowElement;
             if (!windowEl || virtualListState.fullData.length === 0) return;
 
