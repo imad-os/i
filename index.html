@@ -26,1267 +26,2474 @@
             --color-text-alt: #D1D5DB; /* gray-300 */
             --color-primary: #3B82F6; /* blue-500 */
             --color-primary-hover: #2563EB; /* blue-600 */
-            
+
             background-color: var(--color-bg);
             color: var(--color-text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            overflow: hidden; /* Prevent browser-level scrolling */
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+            overflow: hidden; /* Prevent body scrolling */
         }
 
-        /* Define a light theme (can be toggled with a class on the body) */
-        body.light-theme {
-            --color-bg: #F9FAFB; /* gray-50 */
-            --color-bg-alt: #F3F4F6; /* gray-100 */
-            --color-card: #FFFFFF; /* white */
-            --color-text: #1F2937; /* gray-800 */
-            --color-text-alt: #4B5563; /* gray-600 */
-            --color-primary: #3B82F6; /* blue-500 */
-            --color-primary-hover: #2563EB; /* blue-600 */
+        /* Define the 5 theme classes */
+        .theme-default {
+            --color-bg: #0e0808;
+            --color-bg-alt: #1F2937;
+            --color-card: #374151;
+            --color-text: #F9FAFB;
+            --color-text-alt: #D1D5DB;
+            --color-primary: #3B82F6;
+            --color-primary-hover: #2563EB;
         }
 
-        /* Page transition styles */
-        .page {
-            display: none; /* Hide all pages by default */
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Pages should control their own scrolling */
-            animation: fadeIn 0.3s ease-in-out;
+        .theme-red {
+            --color-bg: #0e0808;
+            --color-bg-alt: #3f2525;
+            --color-card: #4a2a2a;
+            --color-text: #FEE2E2;
+            --color-text-alt: #FCA5A5;
+            --color-primary: #EF4444; /* red-500 */
+            --color-primary-hover: #DC2626; /* red-600 */
         }
         
-        .page.active {
-            display: block; /* Show the active page */
+        .theme-green {
+            --color-bg: #0e0808;
+            --color-bg-alt: #1a2c1f;
+            --color-card: #2a4a31;
+            --color-text: #E0F2F1;
+            --color-text-alt: #A7F3D0;
+            --color-primary: #22C55E; /* green-500 */
+            --color-primary-hover: #16A34A; /* green-600 */
         }
+
+        .theme-purple {
+            --color-bg: #0e0808;
+            --color-bg-alt: #231a30;
+            --color-card: #3b2a54;
+            --color-text: #F3E8FF;
+            --color-text-alt: #DDD6FE;
+            --color-primary: #A855F7; /* purple-500 */
+            --color-primary-hover: #9333EA; /* purple-600 */
+        }
+
+        .theme-orange {
+            --color-bg: #0e0808;
+            --color-bg-alt: #30201a;
+            --color-card: #54352a;
+            --color-text: #FFF7ED;
+            --color-text-alt: #FDE68A;
+            --color-primary: #F97316; /* orange-500 */
+            --color-primary-hover: #EA580C; /* orange-600 */
+        }
+
+        /* Utility classes to apply theme colors */
+        .bg-main { background-color: var(--color-bg); }
+        .bg-alt { background-color: var(--color-bg-alt); }
+        .bg-card { background-color: var(--color-card); }
+        .text-main { color: var(--color-text); }
+        .text-alt { color: var(--color-text-alt); }
+        .bg-primary { background-color: var(--color-primary); }
+        .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
+        .border-primary { border-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .ring-primary:focus { --tw-ring-color: var(--color-primary); }
+        .fill-primary { fill: var(--color-primary); }
+        .fill-text { fill: var(--color-text); }
+
+        /* Page transition */
+        .page {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s ease-in-out;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            /* padding-top is now page-specific */
+        }
+        
+        /* Add padding for pages that need it to clear the global header */
+        .page-with-padding {
+            padding-top: 4rem;
+        }
+
+        #page-player {
+             padding-top: 0; /* Player page is fullscreen */
+        }
+        
+        /* CSS for page-content for virtualization.
+           We need will-change for smooth scrolling of the window.
+        */
+        #page-content {
+            /* This is our scroll container */
+        }
+        #content-grid.virtual-sizer {
+            position: relative;
+            width: 100%;
+            padding: 1rem; /* Re-add padding that was on the grid */
+            box-sizing: border-box;
+        }
+        #virtual-grid-window {
+            position: absolute;
+            top: 0;
+            left: 1rem; /* Match padding */
+            right: 1rem; /* Match padding */
+            width: calc(100% - 2rem);
+            will-change: transform;
+        }
+        
 
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.98); }
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* Custom scrollbars for content areas */
-        .page-content {
-            overflow-y: auto;
-            height: 100%;
-            /* Custom scrollbar (WebKit) */
-            &::-webkit-scrollbar {
-                width: 8px;
-            }
-            &::-webkit-scrollbar-track {
-                background: var(--color-bg-alt);
-                border-radius: 4px;
-            }
-            &::-webkit-scrollbar-thumb {
-                background: var(--color-primary);
-                border-radius: 4px;
-            }
-            &::-webkit-scrollbar-thumb:hover {
-                background: var(--color-primary-hover);
-            }
+        /* Focus styles for Tizen D-pad navigation */
+        .nav-item {
+            transition: all 0.2s ease;
+            transform-origin: center;
+            border: 2px solid transparent;
+            border-radius: 0.5rem; /* Ensure this matches rounded-lg */
         }
-        
-        /* Focus state for all interactive items */
-        .category-item:focus, .grid-item:focus, .season-item:focus, .episode-item:focus, .details-button:focus, .player-control:focus, .menu-item:focus {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 4px var(--color-primary);
+        .nav-item:focus {
             outline: none;
-            z-index: 10;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px 5px var(--color-primary);
+            border-color: var(--color-primary);
         }
-        
-        .category-item, .grid-item, .season-item, .episode-item, .details-button, .player-control, .menu-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform, box-shadow; /* Optimize for animations */
+        /* Special focus for small theme buttons */
+        .nav-item-sm:focus {
+             outline: none;
+            box-shadow: 0 0 10px 2px var(--color-primary);
+            border-color: var(--color-primary);
+        }
+        /* Style for active season tab */
+        .season-tab.active {
+            background-color: var(--color-primary);
+            color: var(--color-text);
         }
 
-        /* Loading Spinner */
-        #loading-spinner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            display: none; /* Hidden by default */
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        .spinner {
-            width: 64px;
-            height: 64px;
-            border: 8px solid var(--color-text-alt);
-            border-top-color: var(--color-primary);
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg-alt);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 4px;
+        }
+
+        /* Loader */
+        .loader {
+            border: 4px solid var(--color-bg-alt);
+            border-top: 4px solid var(--color-primary);
             border-radius: 50%;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        /* Error Message */
-        #error-message {
-            position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #EF4444; /* red-500 */
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            z-index: 10000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        /* Player */
+        #page-player {
+            background: #000;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        #web-video-player, #tizen-player-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        /* The Tizen player object must be styled this way */
+        #av-player {
+            width: 100%;
+            height: 100%;
         }
         
-        /* Player styles */
-        #web-video-player, #tizen-player-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            z-index: 5000;
+        /* Watched Progress Bar */
+        .progress-bar {
+            height: 4px;
+            background-color: #555; /* Dim background */
         }
-        #tizen-player-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+        .progress-bar-inner {
             height: 100%;
-            z-index: 5001; /* Above player, below controls */
-            display: none;
+            background-color: var(--color-primary);
+            transition: width 0.2s ease;
+        }
+        #current-time {
+            margin: auto;
+            font-size: 1.525rem;
+            line-height: 1.75rem;
         }
     </style>
 </head>
-<body class="bg-bg text-text">
+<body class="theme-default">
 
-    <!-- 
-      Tizen Player Container 
-      This is where the native Tizen player will be injected.
-    -->
-    <div id="tizen-player-container" style="display: none;"></div>
-    
-    <!-- 
-      Tizen Player UI Overlay
-      This empty div is required for Tizen to capture input events.
-    -->
-    <div id="tizen-player-overlay"></div>
+    <!-- 4. App Container -->
+    <div id="app-container" class="w-full h-screen">
 
-    <!-- 
-      Web Video Player (for testing in browser)
-    -->
-    <video id="web-video-player" style="display: none;" controls></video>
+        <!-- ===== Global Header ===== -->
+        <div id="global-header" class="fixed top-0 left-0 right-0 h-16 bg-alt flex items-center justify-between px-4 z-20 shadow-lg">
+            <!-- Left Slot: Back Button -->
+            <div class="w-1/3">
+                <button id="global-back-button" onclick="goBack()" class="nav-item-sm p-2 rounded-full hover:bg-card hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+            </div>
+            
+            <!-- Center Slot: Time / Title -->
+            <div class="w-1/3 text-center">
+                <h2 id="global-header-title" class="text-2xl font-bold text-main hidden truncate">Page Title</h2>
+            </div>
 
-    <!-- 
-      Main Application UI
-    -->
+            <!-- Right Slot: Settings -->
+            <div class="w-1/3 flex justify-end">
+                <div id="current-time" class="font-semibold text-main" >--:--</div>
 
-    <!-- Page: Loading / Initializing -->
-    <div id="page-LOADING" class="page active flex flex-col justify-center items-center space-y-4">
-        <div class="spinner"></div>
-        <h1 class="text-2xl font-bold text-text-alt">Initializing App...</h1>
-        <p id="loading-status" class="text-lg text-text-alt">Please wait.</p>
-    </div>
-
-    <!-- Page: Categories -->
-    <div id="page-CATEGORIES" class="page">
-        <div class="page-content p-8">
-            <h1 class="text-4xl font-bold mb-8 text-primary">Categories</h1>
-            <div id="category-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                <!-- Category items will be injected here -->
+                <button onclick="showSettingsPage()" class="nav-item-sm p-2 bg-card rounded-full focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-main" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Page: Content Grid (Movies/Series) -->
-    <div id="page-GRID" class="page">
-        <!-- 
-          We use page-content here to make the *entire page* scrollable,
-          including the header. This is better for long grids.
-        -->
-        <div class="page-content p-8">
-            <h1 id="grid-title" class="text-4xl font-bold mb-8 text-primary">Content</h1>
-            <div id="content-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-4">
-                <!-- Grid items will be injected here -->
+        <!-- ===== PAGE: USER LOGIN ===== -->
+        <div id="page-user-login" class="page flex items-center justify-center p-4">
+            <div class="w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl bg-alt">
+                <h1 class="text-3xl font-bold text-center text-main">IPTV Player</h1>
+                <p class="text-center text-alt">Enter your username to load profile</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="username" class="block mb-2 text-sm font-medium text-alt">Username</label>
+                        <input type="text" id="username" placeholder="e.g. 'family' or 'john'" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <button id="user-login-button" class="w-full p-3 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors nav-item">
+                        Login / Create
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Page: Item Details (Series) -->
-    <div id="page-DETAILS" class="page">
-        <!-- The content here is scrollable -->
-        <div id="details-content" class="page-content">
-            <!-- Header section with backdrop and info -->
-            <div id="details-header" class="relative h-[60vh] min-h-[400px] text-white">
-                <!-- Backdrop image -->
-                <div id="details-backdrop" class="absolute inset-0 w-full h-full object-cover"></div>
-                <!-- Gradient overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-transparent"></div>
-                <!-- Content -->
-                <div class="absolute bottom-0 left-0 p-8 md:p-12 z-10 flex space-x-8">
-                    <img id="details-poster" src="" alt="Poster" class="w-40 md:w-52 aspect-[2/3] rounded-lg shadow-xl object-cover hidden md:block">
-                    <div class="flex flex-col justify-end">
-                        <h1 id="details-title" class="text-4xl md:text-6xl font-extrabold shadow-black/50" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);"></h1>
-                        <p id="details-metadata" class="text-lg text-text-alt mt-2"></p>
-                        <p id="details-plot" class="mt-4 text-base text-text-alt max-w-2xl line-clamp-3"></p>
-                        <div class="mt-6 flex space-x-4">
-                            <button id="details-play-button" class="details-button bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-md text-lg font-semibold transition-all duration-200">
-                                Play
-                            </button>
-                            <button id="details-trailer-button" class="details-button bg-card/70 hover:bg-card text-text px-6 py-3 rounded-md text-lg font-semibold transition-all duration-200">
-                                Trailer
-                            </button>
-                        </div>
+        
+        <!-- ===== PAGE: API DETAILS (was LOGIN) ===== -->
+        <div id="page-api-details" class="page flex items-center justify-center p-10 pt-20">
+            <div class="w-full max-w-md p-8 space-y-6 rounded-lg shadow-xl bg-alt">
+                <h1 class="text-3xl font-bold text-center text-main">Connect API</h1>
+                <p class="text-center text-alt">Enter your Xtream Codes API details for user <b id="api-username" class="text-primary"></b></p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="host" class="block mb-2 text-sm font-medium text-alt">Server URL (http://...:port)</label>
+                        <input type="text" id="host" placeholder="http://mydomain.com:8080" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <div>
+                        <label for="api-user" class="block mb-2 text-sm font-medium text-alt">API Username</label>
+                        <input type="text" id="api-user" placeholder="your_username" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <div>
+                        <label for="api-pass" class="block mb-2 text-sm font-medium text-alt">API Password</label>
+                        <input type="password" id="api-pass" placeholder="your_password" class="nav-item w-full p-3 rounded-lg bg-card text-main border border-transparent focus:outline-none focus:ring-2 ring-primary">
+                    </div>
+                    <button id="api-connect-button" class="w-full p-3 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors nav-item">
+                        Connect
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: MAIN MENU ===== -->
+        <!-- This page intentionally does NOT have .page-with-padding, so flex centering works perfectly -->
+        <div id="page-main" class="page flex items-center justify-center  p-10 pt-20">
+            <div style="height: 32%;"></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" style="margin: auto;">
+                <button onclick="loadCategories('live')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 5h8a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Live TV</span>
+                </button>
+                <button onclick="loadCategories('vod')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Movies</span>
+                </button>
+                <button onclick="loadCategories('series')" class="nav-item flex flex-col items-center justify-center p-12 rounded-lg shadow-xl bg-card hover:bg-opacity-80 transition-all h-48">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <span class="mt-4 text-2xl font-bold text-main">Series</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: CATEGORIES ===== -->
+        <div id="page-categories" class="page page-with-padding  p-10 pt-20">
+            <!-- Header removed -->
+            <div id="category-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+                <!-- Categories will be injected here -->
+            </div>
+        </div>
+
+        <!-- ===== PAGE: CONTENT (MOVIES/SERIES) ===== -->
+        <div id="page-content" class="page page-with-padding  p-10 pt-20">
+            <!-- Header removed -->
+            <!-- 
+                Grid for Posters.
+                This element will be dynamically styled for virtualization.
+                It will act as a "sizer" and a container.
+            -->
+            <div id="content-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
+                <!-- Movie/Series posters will be injected here -->
+            </div>
+        </div>
+        
+        <!-- ===== PAGE: SERIES DETAILS (NEW) ===== -->
+        <div id="page-series-details" class="page  page-with-padding  p-10 pt-20">
+             <!-- Header removed -->
+            
+            <div class="flex flex-col md:flex-row gap-8  md:p-8">
+                <!-- Left Column: Info -->
+                <div class="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
+                    <img id="series-cover-image" src="https://placehold.co/400x600/374151/FFFFFF?text=Loading..." alt="Series Cover" class="w-full rounded-lg shadow-xl object-cover aspect-[2/3]">
+                    <h1 id="series-title" class="text-3xl font-bold text-main mt-4">Series Title</h1>
+                    <div class="flex items-center gap-4 mt-2">
+                        <p id="series-year" class="text-lg text-alt">Year</p>
+                        <!-- FAVORITE BUTTON -->
+                        <button id="series-fav-button" class="nav-item-sm p-2 rounded-full bg-card text-main">
+                            <!-- Heart icon will be injected by JS -->
+                        </button>
+                        <!-- NEW WATCH LATER BUTTON -->
+                        <button id="series-watch-later-button" class="nav-item-sm p-2 rounded-full bg-card text-main">
+                            <!-- Bookmark icon will be injected by JS -->
+                        </button>
+                    </div>
+                    <p id="series-plot" class="text-sm text-alt mt-4">Plot description will load here...</p>
+                </div>
+                
+                <!-- Right Column: Seasons & Episodes -->
+                <div class="w-full md:w-2/3 lg:w-3/4">
+                    <!-- Season Tabs -->
+                    <div id="series-seasons-tabs" class="flex flex-wrap gap-2 p-2 bg-card rounded-lg mb-4">
+                        <!-- Season tabs injected here -->
+                    </div>
+                    
+                    <!-- Episodes List -->
+                    <div id="series-episodes-list" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-2">
+                        <!-- Episodes injected here -->
                     </div>
                 </div>
             </div>
-            
-            <!-- Seasons and Episodes Section -->
-            <div class="p-8 md:p-12">
-                <!-- Season Selector -->
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold mb-4 text-primary">Seasons</h2>
-                    <div id="season-list" class="flex flex-wrap gap-4">
-                        <!-- Season items injected here -->
+        </div>
+        
+        <!-- ===== PAGE: SETTINGS ===== -->
+        <div id="page-settings" class="pagepage-with-padding  p-10 pt-20" style="display: none;">
+             <!-- Header removed -->
+            <div class="p-4 max-w-2xl mx-auto space-y-6">
+                <!-- Theme Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">Change Theme</h3>
+                    <div class="flex gap-2 p-2 bg-card rounded-full w-max">
+                        <button onclick="setTheme('theme-default')" class="nav-item-sm w-8 h-8 bg-blue-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-red')" class="nav-item-sm w-8 h-8 bg-red-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-green')" class="nav-item-sm w-8 h-8 bg-green-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-purple')" class="nav-item-sm w-8 h-8 bg-purple-500 rounded-full focus:outline-none border-2 border-transparent"></button>
+                        <button onclick="setTheme('theme-orange')" class="nav-item-sm w-8 h-8 bg-orange-500 rounded-full focus:outline-none border-2 border-transparent"></button>
                     </div>
                 </div>
                 
-                <!-- Episode List -->
+                <!-- Account Settings -->
                 <div>
-                    <h2 id="episode-list-title" class="text-2xl font-bold mb-4 text-primary">Episodes</h2>
-                    <div id="episode-list" class="flex flex-col gap-4">
-                        <!-- Episode items injected here -->
+                    <h3 class="text-xl font-semibold mb-2 text-main">Account</h3>
+                    <button id="logout-button" class="nav-item p-3 font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors w-full sm:w-auto">
+                        Logout (User: <span id="setting-username"></span>)
+                    </button>
+                </div>
+
+                <!-- API Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">API Settings</h3>
+                    <button id="change-api-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors w-full sm:w-auto">
+                        Change Xtream API
+                    </button>
+                </div>
+                
+                <!-- Cache Settings -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-main">Clear Cache</h3>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                         <button id="clear-favorites-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear All Favorites
+                        </button>
+                        <button id="clear-watched-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear Watched Progress
+                        </button>
+                        <!-- NEW: Clear To Watch Button -->
+                        <button id="clear-towatch-button" class="nav-item p-3 font-bold rounded-lg bg-card text-main hover:bg-opacity-80 transition-colors">
+                            Clear To Watch List
+                        </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: PLAYER ===== -->
+        <div id="page-player" class="page">
+            <!-- 1. Standard HTML5 Web Player -->
+            <video id="web-video-player" controls class="hidden w-full h-full"></video>
+
+            <!-- 2. Tizen AVPlay Container -->
+            <div id="tizen-player-container" class="hidden"></div>
+            
+            <!-- 3. Tizen Player Overlay (as requested for details) -->
+            <div id="tizen-player-overlay" class="hidden absolute top-0 left-0 p-8 text-white bg-gradient-to-b from-black/70 via-black/0 to-black/0 opacity-0 transition-opacity duration-500">
+                <h3 id="tizen-movie-name" class="text-3xl font-bold">Movie Name</h3>
+                <p id="tizen-movie-rating" class="text-xl text-yellow-400">Rating: 9.0</p>
+                <p class="text-lg text-gray-300 mt-4">Press "Back" on your remote to exit</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== Global Overlays ===== -->
+    <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+        <div class="loader"></div>
+    </div>
+    
+    <div id="error-toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg bg-red-600 text-white">
+        An error occurred. Please try again.
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div id="movie-details-modal" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-card w-full max-w-3xl rounded-lg shadow-xl overflow-hidden flex flex-col md:flex-row">
+            <!-- Poster -->
+            <img id="modal-movie-poster" src="https://placehold.co/400x600/374151/FFFFFF?text=Loading..." class="w-full md:w-1/3 h-64 md:h-auto object-cover" alt="Movie Poster">
+            <!-- Details -->
+            <div class="flex-1 p-6 space-y-4 overflow-y-auto" style="max-height: 80vh;">
+                <h2 id="modal-movie-title" class="text-3xl font-bold text-main">Movie Title</h2>
+                <div class="flex flex-wrap items-center gap-4 text-alt">
+                    <span id="modal-movie-year">2023</span>
+                    <span id="modal-movie-duration">120 min</span>
+                    <span class="flex items-center gap-1 text-yellow-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        <span id="modal-movie-rating-text">8.5</span>
+                    </span>
+                </div>
+                <p id="modal-movie-plot" class="text-main">Plot summary goes here...</p>
+                <p class="text-sm text-alt"><strong>Cast:</strong> <span id="modal-movie-cast">Actor 1, Actor 2</span></p>
+                <p class="text-sm text-alt"><strong>Genre:</strong> <span id="modal-movie-genre">Action, Sci-Fi</span></p>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-4 pt-4">
+                    <button id="modal-play-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors">
+                        Play
+                    </button>
+                    <button id="modal-close-button" class="nav-item p-3 px-6 font-bold rounded-lg bg-alt text-main hover:bg-opacity-80 transition-colors">
+                        Close
+                    </button>
+                    <!-- NEW WATCH LATER BUTTON -->
+                    <button id="modal-watch-later-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors ml-auto">
+                        <!-- Bookmark icon will be injected by JS -->
+                    </button>
+                    <!-- FAVORITE BUTTON -->
+                    <button id="modal-fav-button" class="nav-item-sm p-3 rounded-full bg-alt text-main hover:bg-opacity-80 transition-colors">
+                        <!-- Heart icon will be injected by JS -->
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 
-      Global Components
-    -->
 
-    <!-- Loading Spinner Overlay -->
-    <div id="loading-spinner">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Error Message Popup -->
-    <div id="error-message">
-        <p>An error occurred!</p>
-    </div>
-
-
+    <!-- 6. Main Application JavaScript -->
     <script>
-        /*
-        =======================================================================
-        Tizen IPTV Player - Main Application Logic
-        =======================================================================
-        */
-
-        // --- 1. Polyfills & Helpers -----------------------------------------
-
-        // Tizen API Mocks (for browser testing)
-        if (typeof webapis === 'undefined') {
-            console.warn("Tizen 'webapis' object not found. Creating mock for browser testing.");
-            window.webapis = {
-                avplay: {
-                    open: (url) => console.log(`[MOCK] AVPlay Open: ${url}`),
-                    prepare: () => console.log("[MOCK] AVPlay Prepare"),
-                    prepareAsync: (cb) => { console.log("[MOCK] AVPlay PrepareAsync"); cb(); },
-                    play: () => console.log("[MOCK] AVPlay Play"),
-                    stop: () => console.log("[MOCK] AVPlay Stop"),
-                    pause: () => console.log("[MOCK] AVPlay Pause"),
-                    seekTo: (ms) => console.log(`[MOCK] AVPlay Seek: ${ms}ms`),
-                    close: () => console.log("[MOCK] AVPlay Close"),
-                    getState: () => 'IDLE',
-                    setListener: (listener) => console.log("[MOCK] AVPlay SetListener"),
-                    setDisplayRect: (x, y, w, h) => console.log(`[MOCK] AVPlay SetDisplayRect: ${x},${y},${w},${h}`),
-                    setDrm: () => console.log("[MOCK] AVPlay SetDrm"),
-                },
-                appcommon: {
-                    setScreenSaver: (state) => console.log(`[MOCK] ScreenSaver: ${state}`),
-                    AppCommonScreenSaverState: { SCREEN_SAVER_OFF: 'OFF' }
-                },
-                inputdevice: {
-                    registerKey: (key) => console.log(`[MOCK] Register Key: ${key}`),
-                    unregisterKey: (key) => console.log(`[MOCK] Unregister Key: ${key}`),
-                },
-                adinfo: {
-                    getTIFA: () => 'mock-tifa-id',
-                    isTrackingEnabled: () => true
-                },
-                productinfo: {
-                    is8KPanel: () => false,
-                    isUdPanel: () => true, // Assume 4K
-                    getModel: () => 'MOCK_TIZEN_TV'
-                }
-            };
-        }
+        // === Global State ===
+        let isTizen = false;
+        let currentUsername = '';
+        const defaultUserSettings = {
+            favorites: [], // Array of stream_ids
+            toWatch: [], // NEW: Array of stream_ids for "To Watch"
+            watched: {}, // { id: { progress_sec, duration_sec, type, item, episode? } }
+            theme: 'theme-default',
+            xtreamConfig: {
+                host: '',
+                username: '',
+                password: ''
+            }
+        };
+        let userSettings = { ...defaultUserSettings };
         
-        // Helper to check if running on Tizen
-        const isTizen = (typeof tizen !== 'undefined') && (typeof webapis !== 'undefined');
-        console.log(`Running on Tizen: ${isTizen}`);
+        let apiBaseUrl = '';
+        let navigationStack = []; // For "Back" button functionality
+        let tizenAvPlayer; // Holds the Tizen player object
+        let tizenOverlayTimer;
+        let currentItem = null; // Holds item being played for progress saving
+        let currentEpisode = null; // Holds episode being played
+        let saveProgressInterval;
+        let lastFocusedElement = null; // For restoring focus after modal
+        let clockInterval;
+        let initialHash = ''; // <-- NEW: For routing on refresh
+        
+        // --- VIRTUALIZATION STATE ---
+        let virtualListState = {
+            config: {
+                bufferRows: 4, // Tunable: How many rows to render above/below viewport
+                virtualizeThreshold: 100 // Only virtualize lists with more than 100 items
+            },
+            itemHeight: 250, // Default, will be measured
+            columns: 4,      // Default, will be measured
+            fullData: [],
+            type: '',
+            context: {},
+            pageElement: null,
+            gridElement: null,
+            windowElement: null,
+            isVirtual: false, // Flag to know if virtualization is active
+            lastScrollTop: 0,
+            resizeTimer: null
+        };
+        // --- END VIRTUALIZATION STATE ---
 
-        // DOM query selectors
+        // === DOM Elements ===
         const $ = (selector) => document.querySelector(selector);
         const $$ = (selector) => document.querySelectorAll(selector);
 
-        // Key codes
-        const KEY_LEFT = 37;
-        const KEY_UP = 38;
-        const KEY_RIGHT = 39;
-        const KEY_DOWN = 40;
-        const KEY_ENTER = 13;
-        const KEY_OK = 13; // Often same as Enter
-        const KEY_RETURN = 10009; // Tizen 'Back' key
-        const KEY_BACK = 10009; // Alias
-        const KEY_PLAY = 415;
-        const KEY_PAUSE = 19;
-        const KEY_STOP = 413;
-        const KEY_FF = 417;
-        const KEY_RW = 412;
-        const KEY_0 = 48;
-        const KEY_1 = 49;
-        const KEY_2 = 50;
-        const KEY_3 = 51;
-        const KEY_4 = 52;
-        const KEY_5 = 53;
-        const KEY_6 = 54;
-        const KEY_7 = 55;
-        const KEY_8 = 56;
-        const KEY_9 = 57;
-        
-        // List of keys to register on Tizen
-        const TIZEN_KEYS = [
-            'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFastForward', 'MediaRewind',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-        ];
-
-        // --- 2. Application State -------------------------------------------
-
-        let currentPage = 'LOADING'; // Tracks the visible page
-        let allData = []; // Holds the master list of items for the current grid
-        let currentCategories = []; // Holds the list of categories
-        let currentItem = null; // The movie/series item currently being viewed/played
-        let currentEpisode = null; // The specific episode being played
-        let currentCategoryLink = null; // Holds {self, next, prev} links for pagination
-        let tizenAvPlayer = null; // Holds the Tizen AVPlay instance
-        let saveProgressInterval = null; // Interval timer for saving progress
-
-        // Stores ephemeral state, like focus position
-        const globalState = {
-            lastFocusedId: null,      // e.g., 'grid-item-1234'
-            lastFocusedIndex: 0,    // e.g., 5
-            focusAfterLoad: null,   // The index to focus after an async append
-            categoryFocusId: null   // e.g., 'category-item-live'
-        };
-        
-        // Stores persistent user settings
-        let userSettings = {
-            m3uUrl: '',
-            watchProgress: {} // { "stream_id": { "position": 1234, "duration": 5000, "percentage": 24.68 } }
-        };
-        
-        // --- 3. Core App Logic ----------------------------------------------
-
-        /**
-         * Called when the application starts.
-         */
-        function onAppLoad() {
-            console.log("Application loading...");
-            showLoading(true, "Initializing...");
-
-            // 1. Load settings
-            loadUserSettings();
+        // === Initialization ===
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("App initializing...");
             
-            // 2. Register Tizen keys
-            registerTizenKeys();
+            // --- NEW: HASH HANDLING ON LOAD ---
+            initialHash = location.hash;
+            if (initialHash) {
+                console.log("Initial hash detected:", initialHash);
+                // Clean the URL bar so refreshes don't stack hashes or cause issues
+                history.replaceState(null, '', '/');
+            }
+            // --- END HASH HANDLING ---
+
+            detectTizen();
+            setupKeyListeners();
+            setupEventListeners();
+            setupClock();
             
-            // 3. Add global key listener
-            document.addEventListener('keydown', handleKey);
-            
-            // 4. Set screen saver off
-            if (isTizen) {
-                try {
-                    webapis.appcommon.setScreenSaver(webapis.appcommon.AppCommonScreenSaverState.SCREEN_SAVER_OFF);
-                    console.log("Screen saver disabled.");
-                } catch (e) {
-                    console.error("Error disabling screen saver:", e);
+            const lastUser = localStorage.getItem('iptv-last-user');
+            if (lastUser) {
+                $('#username').value = lastUser;
+                handleUserLogin();
+            } else {
+                showPage('page-user-login');
+            }
+        });
+        
+        function detectTizen() {
+            try {
+                if (typeof webapis !== 'undefined' && webapis.avplay) {
+                    isTizen = true;
+                    console.log("Tizen platform detected. Using AVPlay.");
+                    
+                    document.addEventListener('tizenhwkey', (e) => {
+                        if (e.keyName === "back") {
+                            // Check if modal is open
+                            if ($('#movie-details-modal').style.display === 'flex') {
+                                hideMovieDetailsModal();
+                            } else {
+                                goBack();
+                            }
+                        }
+                    });
+                } else {
+                    console.log("Standard Web platform detected. Using HTML5 <video> player.");
                 }
+            } catch (e) {
+                console.log("Error detecting Tizen, defaulting to Web.", e);
+                isTizen = false;
             }
-
-            // 5. Fetch initial data
-            // TODO: Replace with real login/config
-            if (!userSettings.m3uUrl) {
-                userSettings.m3uUrl = "http://example.com/api/v1"; // Hardcoded for now
-            }
-            
-            // Start by fetching categories
-            fetchCategories();
         }
 
-        /**
-         * Fetches the main category list.
-         */
-        function fetchCategories() {
-            // TODO: Use real API URL
-            const categoriesUrl = 'https://api.npoint.io/4e4f7e5f6e8c7b8c7c1f'; // Mock API
+        function setupEventListeners() {
+            // User Login
+            $('#user-login-button').addEventListener('click', handleUserLogin);
+            $('#username').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleUserLogin();
+            });
+
+            // API Connect
+            $('#api-connect-button').addEventListener('click', handleApiConnect);
             
-            showLoading(true, "Loading categories...");
-            
-            fetch(categoriesUrl)
-            .then(response => response.json())
-            .then(data => {
-                currentCategories = data.categories; // Assuming API structure
-                renderCategories(currentCategories);
-                showPage('CATEGORIES');
-                showLoading(false);
-            })
-            .catch(error => {
-                console.error("Error fetching categories:", error);
-                showError("Failed to load categories.");
+            // Settings Page
+            $('#logout-button').addEventListener('click', handleLogout);
+            $('#change-api-button').addEventListener('click', () => {
+                // Save current page to stack before moving
+                pushToNavStack($$('.page[style*="block"]')[0].id);
+                showPage('page-api-details');
+            });
+            $('#clear-favorites-button').addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all favorites?')) {
+                    userSettings.favorites = [];
+                    saveUserSettings();
+                    showError('Favorites cleared.');
+                }
+            });
+            $('#clear-watched-button').addEventListener('click', () => {
+                 if (confirm('Are you sure you want to clear all watched progress?')) {
+                    userSettings.watched = {};
+                    saveUserSettings();
+                    showError('Watched progress cleared.');
+                }
+            });
+            // NEW: Clear To Watch Listener
+            $('#clear-towatch-button').addEventListener('click', () => {
+                 if (confirm('Are you sure you want to clear your "To Watch" list?')) {
+                    userSettings.toWatch = [];
+                    saveUserSettings();
+                    showError('"To Watch" list cleared.');
+                }
+            });
+
+            // --- VIRTUALIZATION ---
+            // Add a resize listener to re-calculate virtual list on orientation change etc.
+            window.addEventListener('resize', () => {
+                // Debounce resize
+                clearTimeout(virtualListState.resizeTimer);
+                virtualListState.resizeTimer = setTimeout(() => {
+                    if (virtualListState.isVirtual && $('#page-content').style.display === 'block') {
+                        console.log("Re-measuring on resize");
+                        measureVirtualItem(); // This updates height and columns
+                        // Recalculate total height
+                        const totalRows = Math.ceil(virtualListState.fullData.length / virtualListState.columns);
+                        const totalScrollHeight = totalRows * virtualListState.itemHeight;
+                        virtualListState.gridElement.style.height = `${totalScrollHeight}px`;
+                        // Re-render the window
+                        renderVirtualWindow();
+                    }
+                }, 250); // 250ms debounce
             });
         }
         
-        /**
-         * Fetches content for a specific category URL (movies, series, etc.)
-         * @param {string} url - The API endpoint to fetch.
-         * @param {boolean} append - If true, appends new items to `allData` instead of replacing.
-         */
-        function fetchContent(url, append = false) {
-            if (!url) {
-                console.error("fetchContent called with null or undefined URL.");
-                showError("Invalid content URL.");
-                showLoading(false);
+        function setupKeyListeners() {
+            document.addEventListener('keydown', (e) => {
+                const activePageId = navigationStack[navigationStack.length - 1]?.pageId;
+                
+                // 1. Global Keys
+                if (e.key === 'Escape') {
+                    // Check if modal is open
+                    if ($('#movie-details-modal').style.display === 'flex') {
+                        hideMovieDetailsModal();
+                    } else {
+                        goBack();
+                    }
+                    return;
+                }
+                
+                // 2. Navigation Keys (Arrows/Enter)
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+                    e.preventDefault();
+                    if (e.key === 'Enter') {
+                        document.activeElement?.click();
+                        return;
+                    }
+                    // Check if modal is open and handle nav inside it
+                    if ($('#movie-details-modal').style.display === 'flex') {
+                        handleArrowNavigation(e.key, '#movie-details-modal');
+                    } else {
+                        handleArrowNavigation(e.key);
+                    }
+                    return;
+                }
+                
+                // 3. Context-specific Keys
+                if (activePageId === 'page-content' || (activePageId === 'page-categories' && (navigationStack[navigationStack.length-1].context?.special === 'favorites' || navigationStack[navigationStack.length-1].context?.special === 'watched'))) {
+                    if (e.key === 'f') {
+                        // Toggle favorite on the focused item
+                        const focusedItem = document.activeElement;
+                        if (focusedItem && focusedItem.dataset.streamId) {
+                            toggleFavorite(focusedItem.dataset.streamId, focusedItem.dataset.type, JSON.parse(focusedItem.dataset.item));
+                        }
+                    }
+                    // NEW: 'w' key for Watch Later
+                    if (e.key === 'w') {
+                        // Toggle watch later on the focused item
+                        const focusedItem = document.activeElement;
+                        if (focusedItem && focusedItem.dataset.streamId) {
+                            toggleWatchLater(focusedItem.dataset.streamId, focusedItem.dataset.type, JSON.parse(focusedItem.dataset.item));
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupClock() {
+            const updateTime = () => {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                $('#current-time').textContent = `${hours}:${minutes}`;
+            };
+            updateTime();
+            clockInterval = setInterval(updateTime, 30000); // Update every 30s
+        }
+        
+        function handleArrowNavigation(key, parentSelector = null) {
+            const activePage = parentSelector ? $(parentSelector) : $('.page[style*="block"]');
+            if (!activePage) return;
+            
+            // *** NAVIGATION FIX ***
+            // Select only grid items on content/category pages, or all items on other pages
+            let focusableItems = [];
+            
+            if (parentSelector) {
+                // We are inside a modal
+                focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+            } else if (activePage.id === 'page-categories') {
+                 focusableItems = Array.from(activePage.querySelectorAll('#category-grid .nav-item'));
+            } else if (activePage.id === 'page-content') {
+                 // UPDATED: Select from virtual window or regular grid
+                 const grid = virtualListState.isVirtual ? virtualListState.windowElement : $('#content-grid');
+                 // *** FIX: Add null check ***
+                 if (grid) {
+                    focusableItems = Array.from(grid.querySelectorAll('.nav-item'));
+                 } else {
+                    focusableItems = [];
+                 }
+            } else if (activePage.id === 'page-series-details') {
+                // Special nav for series page (Seasons + Episodes)
+                // UPDATED: Include new buttons
+                focusableItems = Array.from(activePage.querySelectorAll('#series-fav-button, #series-watch-later-button, #series-seasons-tabs .nav-item, #series-episodes-list .nav-item'));
+            } else if (activePage.id === 'page-main') {
+                 // Only focus the three main category buttons
+                 focusableItems = Array.from(activePage.querySelectorAll('[onclick*="loadCategories"]'));
+            } else {
+                // Default behavior for all other pages (login, settings, etc.)
+                focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+            }
+            // **********************
+            
+            if (focusableItems.length === 0) return;
+
+            let currentIndex = focusableItems.indexOf(document.activeElement);
+            
+            // If nothing is focused, focus the first item
+            if (currentIndex === -1) {
+                focusableItems[0].focus();
+                return;
+            }
+
+            // Get geometry
+            const currentRect = focusableItems[currentIndex].getBoundingClientRect();
+            
+            let nextItem = null;
+            let minDistance = Infinity;
+            
+            // Simple grid logic for grids
+            const grid = activePage.querySelector('#content-grid, #category-grid, #virtual-grid-window');
+            if (grid && !parentSelector) { // Only apply grid logic if not in modal
+                
+                // *** FIX: Determine columns correctly ***
+                let columns = 1;
+                if (activePage.id === 'page-content' && virtualListState.isVirtual) {
+                    columns = virtualListState.columns; // Use stored columns
+                } else {
+                    // Get computed columns for category grid or non-virtual content grid
+                    columns = window.getComputedStyle(grid).getPropertyValue('grid-template-columns').split(' ').length;
+                }
+                // *** END FIX ***
+                
+                let nextIndex = -1;
+                if (key === 'ArrowRight') nextIndex = currentIndex + 1;
+                else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
+                else if (key === 'ArrowDown') nextIndex = currentIndex + columns;
+                else if (key === 'ArrowUp') nextIndex = currentIndex - columns;
+
+                if (nextIndex >= 0 && nextIndex < focusableItems.length) {
+                    focusableItems[nextIndex].focus();
+                    // Scroll into view - for virtual grid, this will trigger the scroll listener
+                    focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+            
+            // Fallback: Find closest item in the desired direction (for mixed layouts)
+            focusableItems.forEach((item, index) => {
+                if (index === currentIndex) return;
+                const itemRect = item.getBoundingClientRect();
+                let isCandidate = false;
+                let distance = Infinity;
+
+                switch (key) {
+                    case 'ArrowRight':
+                        if (itemRect.left > currentRect.left || (itemRect.left === currentRect.left && itemRect.top > currentRect.top)) {
+                            isCandidate = true;
+                            distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2); // Prioritize horizontal
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (itemRect.left < currentRect.left || (itemRect.left === currentRect.left && itemRect.top < currentRect.top)) {
+                            isCandidate = true;
+                            distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2);
+                        }
+                        break;
+                    case 'ArrowDown':
+                        if (itemRect.top > currentRect.top) {
+                            isCandidate = true;
+                            distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top); // Prioritize vertical
+                        }
+                        break;
+                    case 'ArrowUp':
+                        if (itemRect.top < currentRect.top) {
+                            isCandidate = true;
+                            distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top);
+                        }
+                        break;
+                }
+                
+                if (isCandidate && distance < minDistance) {
+                    minDistance = distance;
+                    nextItem = item;
+                }
+            });
+            
+            if (nextItem) {
+                nextItem.focus();
+                nextItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function cleanupVirtualisation(){
+            console.log("Cleaning up virtual scroll listener.");
+            if(virtualListState?.pageElement?.onscroll){
+                virtualListState.pageElement.onscroll = null;
+            }
+            // window.onresize is now global, don't null it here, just check in the handler
+            virtualListState.isVirtual = false;
+            virtualListState.fullData = [];
+            
+            // Restore grid
+            if(virtualListState.gridElement) {
+                virtualListState.gridElement.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
+                virtualListState.gridElement.style.height = 'auto';
+                virtualListState.gridElement.style.position = 'static';
+            }
+            if(virtualListState.windowElement) {
+                virtualListState.windowElement.innerHTML = '';
+                virtualListState.windowElement.remove();
+                virtualListState.windowElement = null; // Re-create next time
+            }
+        }
+        // === Navigation ===
+        function showPage(pageId) {
+            // Manage Global Header state
+            const globalHeader = $('#global-header');
+            const globalBackButton = $('#global-back-button');
+            const globalTitle = $('#global-header-title');
+
+            // Default state (for main menu)
+            globalBackButton.style.display = 'none';
+            globalTitle.style.display = 'none';
+
+            if (pageId === 'page-player') {
+                globalHeader.style.display = 'none';
+            } else if (pageId === 'page-user-login' || pageId === 'page-api-details') {
+                // Hide header for login pages
+                globalHeader.style.display = 'none';
+            } else if (pageId === 'page-main') {
+                globalHeader.style.display = 'flex'; // Show header
+                // Default state is already set for main menu
+            } else {
+                // For all other pages (categories, content, settings, etc.)
+                globalHeader.style.display = 'flex';
+                globalBackButton.style.display = 'block';
+                globalTitle.style.display = 'block';
+            }
+            
+            // --- VIRTUALIZATION CLEANUP ---
+            // If we are navigating *away* from page-content, clear the listener
+            const currentPageEl = $$('.page[style*="block"]')[0];
+            if (virtualListState.isVirtual && virtualListState.pageElement && (!currentPageEl || currentPageEl.id !== 'page-content') && pageId !== 'page-content') {
+                cleanupVirtualisation();
+            }
+            
+            // --- END VIRTUALIZATION ---
+
+
+            $$('.page').forEach(page => page.style.display = 'none');
+            const targetPage = $(`#${pageId}`);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+                targetPage.scrollTop = 0; // Scroll to top
+                
+                // Focus the first item
+                let firstItem;
+                if (pageId === 'page-content') {
+                     // Focus first item in grid (virtual or not)
+                     firstItem = targetPage.querySelector('#content-grid .nav-item, #virtual-grid-window .nav-item');
+                } else if (pageId === 'page-series-details') {
+                    firstItem = targetPage.querySelector('#series-fav-button, #series-watch-later-button, .nav-item, .nav-item-sm');
+                } else {
+                     firstItem = targetPage.querySelector('.nav-item, .nav-item-sm');
+                }
+                
+                if (firstItem) {
+                    // Use a small timeout to ensure focus works after display:block
+                    setTimeout(() => firstItem.focus(), 50);
+                }
+            } else {
+                console.error(`Page not found: ${pageId}`);
+            }
+        }
+
+        function pushToNavStack(pageId, context = {}) {
+            // Avoid pushing the same page twice
+            if (navigationStack.length > 0 && navigationStack[navigationStack.length-1].pageId === pageId) {
+                navigationStack[navigationStack.length-1].context = context; // update context
+                return;
+            }
+            navigationStack.push({ pageId, context });
+            
+            updateHashFromState({ pageId, context }); // <-- SYNC URL HASH
+        }
+        
+        function showSettingsPage() {
+            pushToNavStack($$('.page[style*="block"]')[0].id); // Save current page
+            $('#setting-username').textContent = currentUsername;
+            $('#global-header-title').textContent = 'Settings';
+            showPage('page-settings');
+            pushToNavStack('page-settings');
+        }
+
+        function goBack() {
+            const currentPage = navigationStack.pop();
+            if (!currentPage) return; // Should not happen
+
+            if (currentPage.pageId === 'page-player') {
+                stopPlayer();
+            }
+
+            if (navigationStack.length === 0) {
+                showPage('page-main');
+                pushToNavStack('page-main');
+                return;
+            }
+
+            const lastState = navigationStack[navigationStack.length - 1];
+            if (lastState) {
+                showPage(lastState.pageId);
+                // Update title based on the page we're going *back* to
+                // This will be re-set by load functions, but good for immediate feedback
+                if(lastState.pageId === 'page-categories') {
+                    $('#global-header-title').textContent = 'Categories';
+                } else if (lastState.pageId === 'page-content') {
+                     $('#global-header-title').textContent = 'Content';
+                } // etc. The load functions will correct this.
+
+                // After showing, re-focus the correct element
+                setTimeout(() => {
+                    let firstItem;
+                    if (lastState.pageId === 'page-main') {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('[onclick*="loadCategories"]');
+                    } else if (lastState.pageId === 'page-categories') {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('#category-grid .nav-item');
+                    } else if (lastState.pageId === 'page-content') {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('#content-grid .nav-item, #virtual-grid-window .nav-item');
+                    } else {
+                        firstItem = $(`#${lastState.pageId}`).querySelector('.nav-item, .nav-item-sm');
+                    }
+                    if (firstItem) firstItem.focus();
+                }, 100);
+                
+                updateHashFromState(lastState); // <-- SYNC URL HASH
+            }
+        }
+
+        // === Theming ===
+        function setTheme(themeName) {
+            document.body.className = themeName;
+            userSettings.theme = themeName;
+            saveUserSettings();
+        }
+
+        function loadTheme() {
+            document.body.className = userSettings.theme || 'theme-default';
+        }
+
+        // === Loading & Error Handling ===
+        function showLoader(show) {
+            $('#loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+        
+        function showError(message) {
+            const toast = $('#error-toast');
+            toast.textContent = message || 'An error occurred.';
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // === User & Settings Management ===
+        function saveUserSettings() {
+            if (!currentUsername) return;
+            localStorage.setItem(`iptv-user-${currentUsername}`, JSON.stringify(userSettings));
+        }
+
+        // NEW: Function to update the URL hash based on app state
+        function updateHashFromState(state) {
+            if (!state) state = navigationStack[navigationStack.length - 1]; // Get current state
+            if (!state) return; // No state
+
+            const { pageId, context } = state;
+            let hash = '';
+
+            try {
+                if (pageId === 'page-user-login') {
+                    hash = '#login';
+                } else if (pageId === 'page-main') {
+                    hash = '#main';
+                } else if (pageId === 'page-settings') {
+                    hash = '#settings';
+                } else if (pageId === 'page-categories') {
+                    hash = `#categories/${context.type}`; // e.g., #categories/vod
+                } else if (pageId === 'page-content') {
+                    const type = context.type === 'vod' ? 'movies' : context.type;
+                    hash = `#${type}/${context.categoryId}`; // e.g., #movies/all
+                } else if (pageId === 'page-series-details') {
+                    hash = `#series/${context.seriesItem.series_id}`; // e.g., #series/1234
+                } else if (pageId === 'page-player') {
+                    let playerHash = '#player';
+                    if (currentItem) {
+                        // Find category from *previous* stack item
+                        const lastState = navigationStack[navigationStack.length - 2];
+                        let catId = (lastState && lastState.context && lastState.context.categoryId) ? lastState.context.categoryId : 'all';
+                            
+                        if (currentEpisode) { // Series Episode
+                            // #series/catId/seriesId/episodeStreamId
+                            playerHash = `#series/${catId}/${currentItem.series_id}/${currentEpisode.stream_id}`;
+                        } else if (currentItem.stream_type === 'vod') { // Movie
+                            // #movies/catId/streamId
+                            playerHash = `#movies/${catId}/${currentItem.stream_id}`;
+                        } else if (currentItem.stream_type === 'live') { // Live
+                            // #live/catId/streamId
+                            playerHash = `#live/${catId}/${currentItem.stream_id}`;
+                        }
+                    }
+                    hash = playerHash;
+                } else {
+                    hash = `#${pageId}`; // Fallback
+                }
+            } catch (e) {
+                console.warn("Could not generate hash:", e);
+                hash = "#error";
+            }
+
+            // Use replaceState to update URL without adding a new browser history entry
+            // This keeps your navigationStack as the source of truth.
+            if (hash && location.hash !== hash) {
+                // Use history.pushState to allow browser back button to work with our goBack()
+                // NOTE: We will use replaceState to keep our own stack master.
+                history.replaceState(null, '', hash);
+            }
+        }
+
+        function loadUserSettings(username) {
+            const savedSettings = localStorage.getItem(`iptv-user-${username}`);
+            if (savedSettings) {
+                userSettings = JSON.parse(savedSettings);
+                // Ensure all keys from default are present
+                userSettings = {
+                    ...defaultUserSettings,
+                    ...userSettings,
+                    // Deeper merge for config
+                    xtreamConfig: {
+                        ...defaultUserSettings.xtreamConfig,
+                        ...(userSettings.xtreamConfig || {})
+                    },
+                    // Ensure nested objects exist
+                    favorites: userSettings.favorites || [],
+                    toWatch: userSettings.toWatch || [], // NEW
+                    watched: userSettings.watched || {},
+                };
+            } else {
+                userSettings = { ...defaultUserSettings }; // Create new profile
+            }
+            currentUsername = username;
+            localStorage.setItem('iptv-last-user', username);
+            loadTheme();
+        }
+        
+        // --- UPDATED handleUserLogin ---
+        async function handleUserLogin() {
+            const username = $('#username').value.trim();
+            if (!username) {
+                showError('Please enter a username.');
                 return;
             }
             
-            // Don't show loading overlay for appended content, it's smoother without
-            if (!append) {
-                showLoading(true);
+            showLoader(true);
+            try {
+                // 1. Try to fetch remote settings
+                const response = await fetch(`/users/${username}.json`);
+                if (response.ok) {
+                    console.log("Fetched remote user settings.");
+                    const fetchedSettings = await response.json();
+                    
+                    // Merge remote settings with defaults
+                    userSettings = {
+                        ...defaultUserSettings,
+                        ...fetchedSettings,
+                        xtreamConfig: {
+                            ...defaultUserSettings.xtreamConfig,
+                            ...(fetchedSettings.xtreamConfig || {})
+                        },
+                        favorites: fetchedSettings.favorites || [],
+                        toWatch: fetchedSettings.toWatch || [],
+                        watched: fetchedSettings.watched || {},
+                    };
+                    
+                } else {
+                    // 2. No remote settings, fall back to localStorage
+                    console.log("No remote settings found, loading from localStorage.");
+                    loadUserSettings(username); // This loads from localStorage or creates new
+                }
+            } catch (e) {
+                showLoader(false);
+                // 3. Fetch failed (e.g., offline), fall back to localStorage
+                console.warn("Fetch failed, loading from localStorage.", e);
+                loadUserSettings(username); // This loads from localStorage or creates new
+
+            } finally {
+                showLoader(false);
+                currentUsername = username;
+                localStorage.setItem('iptv-last-user', username);
+                loadTheme();
+                saveUserSettings(); // Save merged settings to localStorage
+            }
+            
+            // 4. Check if API is configured
+            if (userSettings.xtreamConfig && userSettings.xtreamConfig.host) {
+                // Test API config
+                handleApiConnect(null,true); // true = isAutoLogin
+            } else {
+                // 5. Need to configure API
+                $('#api-username').textContent = username;
+                // Pre-fill fields from settings (which might be from user.json)
+                $('#host').value = userSettings.xtreamConfig.host || '';
+                $('#api-user').value = userSettings.xtreamConfig.username || '';
+                $('#api-pass').value = userSettings.xtreamConfig.password || '';
+                showPage('page-api-details');
+            }
+        }
+        
+        function handleLogout() {
+            currentUsername = '';
+            userSettings = { ...defaultUserSettings };
+            navigationStack = [];
+            showPage('page-user-login');
+            history.replaceState(null, '', '#login'); // Update hash on logout
+        }
+
+        // === API Handling ===
+        async function handleApiConnect(e, isAutoLogin = false) {
+            console.log(`handleApiConnect called (isAutoLogin: ${isAutoLogin})`); // DEBUG
+            const config = userSettings.xtreamConfig;
+            
+            if (!isAutoLogin) {
+                config.host = $('#host').value.trim();
+                config.username = $('#api-user').value.trim();
+                config.password = $('#api-pass').value.trim();
+                
+                console.log('Reading from form fields:', config); // DEBUG
             }
 
-            console.log(`Fetching content from: ${url}`);
+            if (!config.host || !config.username || !config.password) {
+                console.log(isAutoLogin)
+                console.log('Validation failed. One or more fields are empty.'); // DEBUG
+                if (!isAutoLogin) showError('Please fill in all fields.');
+                // Pre-fill fields with the data that just failed
+                $('#host').value = config.host || '';
+                $('#api-user').value = config.username || '';
+                $('#api-pass').value = config.password || '';
+                showPage('page-api-details');
+                return;
+            }
             
-            fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Content data received:", data);
-                
-                // --- Navigation Links (Pagination) ---
-                const links = data.links || (data.pagination ? data.pagination.links : null);
-                if (links) {
-                    currentCategoryLink = {
-                        self: links.self,
-                        next: links.next,
-                        prev: links.prev
-                    };
-                    console.log("Updated category links:", currentCategoryLink);
-                } else {
-                    console.log("No pagination links found in response.");
-                    // Don't nullify if appending, we might be at the end
-                    if (!append) {
-                        currentCategoryLink = null;
-                    } else if (currentCategoryLink) {
-                        // We've appended, and there's no 'next' link, so we are at the end.
-                        currentCategoryLink.next = null;
-                    }
-                }
-                
-                // --- Content Items ---
-                const newItems = data.items || data.data || []; // Adjust based on API structure
-                
-                if (append) {
-                    console.log(`Appending ${newItems.length} new items.`);
-                    allData.push(...newItems);
-                    appendContentGrid(newItems); // Call the new append function
+            console.log('Validation passed. Proceeding to fetch.'); // DEBUG
+
+            if (!config.host.startsWith('http')) config.host = 'http://' + config.host;
+            if (config.host.endsWith('/')) config.host = config.host.slice(0, -1);
+
+            apiBaseUrl = `${config.host}/player_api.php`;
+
+            try {
+                // Test login
+                const data = await fetchXtream({ action: 'get_vod_categories' });
+                if (data) {
+                    console.log('API connection successful');
+                    userSettings.xtreamConfig = config; // Save config
+                    saveUserSettings();
                     
-                    // Restore focus to the item we were trying to navigate TO
-                    const targetIndex = globalState.focusAfterLoad;
-                    if (targetIndex != null) {
-                        const items = $$('#content-grid .grid-item');
-                        const targetItem = items[targetIndex];
-                        if (targetItem) {
-                            console.log(`Restoring focus to appended item index: ${targetIndex}`);
-                            targetItem.focus();
-                            targetItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        } else {
-                            console.warn(`Could not find item at index ${targetIndex} after append.`);
-                            // Fallback: focus the last item from the *previous* batch
-                            const fallbackItem = items[globalState.lastFocusedIndex];
-                            if (fallbackItem) {
-                                fallbackItem.focus();
+                    // --- NEW ROUTING LOGIC ---
+                    // Check if we have a deep link hash to handle from page load
+                    if (initialHash && initialHash !== '#main' && initialHash !== '#login' && initialHash !== '#') {
+                        const handled = await handleInitialHash(initialHash); // Make it async
+                        if (!handled) {
+                            // If routing failed, go to main
+                            console.warn("Failed to handle hash, defaulting to main.");
+                            showPage('page-main');
+                            pushToNavStack('page-main');
+                        }
+                    } else {
+                        // No hash, just go to main
+                        showPage('page-main');
+                        pushToNavStack('page-main');
+                    }
+                    initialHash = ''; // Clear the hash, it has been handled
+                    // --- END NEW LOGIC ---
+
+                } else {
+                    throw new Error("Authentication failed or empty response.");
+                }
+            } catch (error) {
+                console.error('API connection failed:', error);
+                // Use the specific error message from fetchXtream
+                showError(`API Error: ${error.message}`);
+                
+                // Pre-fill fields with the data that just failed
+                $('#host').value = config.host || '';
+                $('#api-user').value = config.username || '';
+                $('#api-pass').value = config.password || '';
+                
+                showPage('page-api-details');
+            }
+        }
+
+        // NEW: Handles routing from a hash on page load
+        async function handleInitialHash(hash) {
+            console.log("Handling initial hash:", hash);
+            try {
+                const parts = hash.substring(1).split('/'); // Remove # and split
+                const page = parts[0];
+                const id1 = parts[1]; // categoryId or series_id
+                const id2 = parts[2]; // stream_id or series_id
+                const id3 = parts[3]; // episode_stream_id
+
+                if (!page) return false;
+
+                switch (page) {
+                    case 'main':
+                        showPage('page-main');
+                        pushToNavStack('page-main');
+                        return true;
+                    
+                    case 'settings':
+                        showSettingsPage(); // This already handles nav stack
+                        return true;
+                    
+                    case 'categories':
+                        // #categories/vod
+                        if (id1) {
+                            await loadCategories(id1); // This is async
+                            return true;
+                        }
+                        break;
+                    
+                    case 'movies':
+                    case 'series':
+                    case 'live':
+                        const type = (page === 'movies') ? 'vod' : page; // 'vod', 'series', 'live'
+
+                        if (id1 && !id2) {
+                            // Case 1: Content List (#movies/187) or Series Details (#series/1234)
+                            if (type === 'series') {
+                                // This is #series/1234 (Series Details)
+                                showLoader(true);
+                                // We don't have the full 'item', so we create a minimal one.
+                                // loadSeriesInfo will fetch the rest.
+                                const minimalSeriesItem = { series_id: id1, name: 'Loading...' };
+                                await loadSeriesInfo(minimalSeriesItem); // This is async
+                                showLoader(false);
+                                return true;
+                            } else {
+                                // This is #movies/187 or #live/187 (Content List)
+                                // We need the category name, but don't have it.
+                                const categoryName = `Category ${id1}`;
+                                await loadContent(type, id1, categoryName, {}); // This is async
+                                return true;
+                            }
+                        } else if (id1 && id2 && !id3) {
+                            // Case 2: Movie Player (#movies/187/45) or Live Player (#live/187/45)
+                            const stream_id = id2;
+                            showLoader(true);
+                            
+                            if(type === 'vod') {
+                                const info = await fetchXtream({ action: 'get_vod_info', vod_id: stream_id });
+                                if (info && info.movie_data) {
+                                    // Reconstruct a minimal 'item' for handleMovieClick
+                                    const item = {
+                                        stream_id: info.movie_data.stream_id,
+                                        name: info.info.name,
+                                        rating: info.info.rating_5based,
+                                        movie_image: info.info.movie_image,
+                                        stream_type: 'vod'
+                                    };
+                                    // Build fake nav stack
+                                    pushToNavStack('page-main'); // So back button works
+                                    pushToNavStack('page-content', { type: 'vod', categoryId: id1, categoryName: `Category ${id1}` });
+                                    playMovie(item, 0, info); // This will show player and push nav stack
+                                    showLoader(false);
+                                    return true;
+                                }
+                            } else if (type === 'live') {
+                                // Can't get single live stream info. Play directly.
+                                const item = { stream_id: stream_id, name: "Live Stream", stream_type: 'live' };
+                                pushToNavStack('page-main'); // So back button works
+                                pushToNavStack('page-content', { type: 'live', categoryId: id1, categoryName: `Category ${id1}` });
+                                playLive(item); // This pushes 'page-player'
+                                showLoader(false);
+                                return true;
+                            }
+
+                        } else if (id1 && id2 && id3) {
+                            // Case 3: Series Player (#series/187/1234/5678)
+                            // catId: id1, series_id: id2, episode_stream_id: id3
+                            if (type === 'series') {
+                                showLoader(true);
+                                // We need:
+                                // 1. The series item (for series_id: id2)
+                                // 2. The episode item (for stream_id: id3)
+                                
+                                const seriesInfo = await fetchXtream({ action: 'get_series_info', series_id: id2 });
+                                if (seriesInfo) {
+                                    const minimalSeriesItem = { 
+                                        series_id: id2, 
+                                        name: seriesInfo.info.name, 
+                                        cover: seriesInfo.info.cover,
+                                        rating: seriesInfo.info.rating
+                                    };
+                                    
+                                    // Now find the episode
+                                    let targetEpisode = null;
+                                    for (const seasonNum in seriesInfo.episodes) {
+                                        const found = seriesInfo.episodes[seasonNum].find(ep => ep.stream_id == id3);
+                                        if (found) {
+                                            targetEpisode = found;
+                                            break;
+                                        }
+                                    }
+
+                                    if (targetEpisode) {
+                                        // We're about to play, so build the nav stack
+                                        pushToNavStack('page-main'); // So back button works
+                                        pushToNavStack('page-content', { type: 'series', categoryId: id1, categoryName: `Category ${id1}` });
+                                        pushToNavStack('page-series-details', { seriesItem: minimalSeriesItem });
+                                        playEpisode(targetEpisode, minimalSeriesItem, 0); // This pushes 'page-player'
+                                        showLoader(false);
+                                        return true;
+                                    }
+                                }
                             }
                         }
-                        globalState.focusAfterLoad = null; // Clear the flag
+                        break;
+                }
+
+                // Fallback if no route matched
+                showLoader(false);
+                return false;
+
+            } catch (e) {
+                console.error("Error during hash routing:", e);
+                showLoader(false);
+                return false;
+            }
+        }
+
+
+        async function fetchXtream(params) {
+            showLoader(true);
+            const urlParams = new URLSearchParams({
+                username: userSettings.xtreamConfig.username,
+                password: userSettings.xtreamConfig.password,
+                ...params
+            });
+
+            const url = `${apiBaseUrl}?${urlParams.toString()}`;
+            console.log(`Fetching from Xtream API: ${url}`); // DEBUG
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Network error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                
+                if (data.user_info && data.user_info.auth === 0) {
+                     throw new Error("Xtream API: Authentication failed.");
+                }
+                
+                showLoader(false);
+                return data;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                
+                // Check for network failure, which is often a CORS issue
+                if (error instanceof TypeError && error.message === "Failed to fetch") {
+                     const specificError = "Network Error (Server offline or CORS issue).";
+                     showError(specificError);
+                     throw new Error(specificError); // Re-throw to be caught by handleApiConnect
+                } else {
+                    showError(error.message); // Show specific error (e.g., "Authentication failed")
+                    throw error; // Re-throw
+                }
+            }
+        }
+        
+        // === Favorites & Watched Logic ===
+        
+        function isFavorite(stream_id) {
+            return userSettings.favorites.includes(String(stream_id));
+        }
+        
+        function toggleFavorite(stream_id, type, item) {
+            if (!stream_id || !type || !item) {
+                 const focusedItem = document.activeElement;
+                 stream_id = focusedItem.dataset.streamId;
+                 type = focusedItem.dataset.type;
+                 item = JSON.parse(focusedItem.dataset.item);
+            }
+
+            const idStr = String(stream_id);
+            const heartIcon = $(`#fav-icon-${idStr}`);
+            
+            if (isFavorite(idStr)) {
+                userSettings.favorites = userSettings.favorites.filter(id => id !== idStr);
+                if (heartIcon) heartIcon.innerHTML = getHeartIcon(false); // Update UI
+                console.log("Removed from favorites");
+            } else {
+                userSettings.favorites.push(idStr);
+                if (heartIcon) heartIcon.innerHTML = getHeartIcon(true); // Update UI
+                console.log("Added to favorites");
+            }
+            
+            // Need to save the full item for "Favorites" category
+            // We'll store it in the 'watched' object as it can hold item data
+            const key = type === 'series' ? item.series_id : item.stream_id;
+            // Ensure item type is stored correctly for filtering
+            const itemType = type === 'series' ? 'series' : (item.stream_type || type);
+            if (!userSettings.watched[key]) {
+                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
+            } else {
+                 // Update type if it's missing, e.g. from an old 'watched' entry
+                 userSettings.watched[key].type = itemType;
+                 userSettings.watched[key].item = item; // Update item
+            }
+            
+            saveUserSettings();
+        }
+        
+        // --- NEW "TO WATCH" ---
+        function isToWatch(stream_id) {
+            return userSettings.toWatch.includes(String(stream_id));
+        }
+        
+        function toggleWatchLater(stream_id, type, item) {
+             if (!stream_id || !type || !item) {
+                 const focusedItem = document.activeElement;
+                 stream_id = focusedItem.dataset.streamId;
+                 type = focusedItem.dataset.type;
+                 item = JSON.parse(focusedItem.dataset.item);
+            }
+
+            const idStr = String(stream_id);
+            const bookmarkIcon = $(`#towatch-icon-${idStr}`); // For grid (not yet implemented)
+            
+            if (isToWatch(idStr)) {
+                userSettings.toWatch = userSettings.toWatch.filter(id => id !== idStr);
+                if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(false); // Update UI
+                console.log("Removed from To Watch");
+            } else {
+                userSettings.toWatch.push(idStr);
+                if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(true); // Update UI
+                console.log("Added to To Watch");
+            }
+            
+            // Need to save the full item for "To Watch" category
+            // We'll store it in the 'watched' object as it can hold item data
+            const key = type === 'series' ? item.series_id : item.stream_id;
+            const itemType = type === 'series' ? 'series' : (item.stream_type || type);
+            if (!userSettings.watched[key]) {
+                 userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
+            } else {
+                 userSettings.watched[key].type = itemType;
+                 userSettings.watched[key].item = item; // Update item
+            }
+            
+            saveUserSettings();
+        }
+        
+        
+        /**
+         * Gets watched progress for a VOD item or a Series.
+         * @param {string} id - The stream_id (VOD) or series_id (Series).
+         * @param {string|null} [episode_id=null] - (For Series) The specific episode ID to check progress for.
+         * @returns {object|null} The progress object or null.
+         */
+        function getWatchedProgress(id, episode_id = null) {
+            const progress = userSettings.watched[String(id)];
+            if (!progress) return null;
+
+            if (progress.type === 'series' && episode_id) {
+                // User wants progress for a *specific* episode
+                if (progress.episode && String(progress.episode.id) === String(episode_id)) {
+                    return progress; // Progress matches this episode
+                }
+                return null; // Progress exists for the series, but a different episode
+            }
+            
+            // For VOD, or just checking series-level (last watched)
+            return progress;
+        }
+        
+        /**
+         * Saves progress for the currently playing item.
+         * @param {object} item - The VOD item or Series item.
+         * @param {number} currentTime - Current playback time in seconds.
+         * @param {number} duration - Total duration in seconds.
+         * @param {string} type - 'vod' or 'series'.
+         * @param {object|null} [episodeData=null] - The episode object (if type is 'series').
+         */
+        function saveProgress(item, currentTime, duration, type, episodeData = null) {
+            if (!item || !duration || duration === 0) return;
+
+            let idStr;
+            let progressData;
+
+            if (type === 'series' && episodeData) {
+                idStr = String(item.series_id); // Save against the *Series ID*
+                progressData = {
+                    progress_sec: Math.floor(currentTime),
+                    duration_sec: Math.floor(duration),
+                    type: 'series',
+                    item: item, // The series item
+                    episode: episodeData // The episode item
+                };
+            } else if (type === 'vod') {
+                idStr = String(item.stream_id); // Save against the *VOD ID*
+                progressData = {
+                    progress_sec: Math.floor(currentTime),
+                    duration_sec: Math.floor(duration),
+                    type: 'vod',
+                    item: item
+                };
+            } else {
+                return; // Don't save progress for Live TV
+            }
+            
+            // Don't overwrite a full 'watched' item with a 'progress' item
+            // e.g. if it was just saved for favorites
+            const existing = userSettings.watched[idStr];
+            if (existing) {
+                userSettings.watched[idStr] = { ...existing, ...progressData };
+            } else {
+                userSettings.watched[idStr] = progressData;
+            }
+
+            // Note: We don't call saveUserSettings() here to avoid spamming localStorage
+            // It's called by the saveProgressInterval instead.
+        }
+
+        // === Page Loading Logic ===
+        async function loadCategories(type) {
+            let action = '', title = '';
+            if (type === 'live') {
+                action = 'get_live_categories'; title = 'Live TV Categories';
+            } else if (type === 'vod') {
+                action = 'get_vod_categories'; title = 'Movie Categories';
+            } else if (type === 'series') {
+                action = 'get_series_categories'; title = 'Series Categories';
+            }
+
+            const categories = await fetchXtream({ action });
+            if (categories && Array.isArray(categories)) {
+                $('#global-header-title').textContent = title;
+                const grid = $('#category-grid');
+                grid.innerHTML = ''; // Clear old
+                
+                // --- ADD CUSTOM CATEGORIES ---
+                
+                // 1. Favorites (NOW FOR ALL TYPES)
+                if (userSettings.favorites.length > 0) {
+                    // Get all favorite items from the 'watched' cache
+                    const favItems = userSettings.favorites
+                        .map(id => {
+                            const watchedItem = Object.values(userSettings.watched).find(w => 
+                                (w.item.stream_id == id || w.item.series_id == id)
+                            );
+                            return watchedItem ? watchedItem : null; // Return the whole entry (item + type)
+                        })
+                        .filter(entry => {
+                            if (!entry || !entry.item) return false;
+                            if (type === 'live') return entry.type === 'live';
+                            if (type === 'vod') return entry.type === 'vod';
+                            if (type === 'series') return entry.type === 'series';
+                            return false;
+                        });
+                        
+                    if (favItems.length > 0) {
+                         grid.appendChild(createCategoryCard('Favorites', 'favorites', type, { special: 'favorites' }));
+                    }
+                }
+                
+                // 2. Continue Watching / To Watch (VOD/Series only)
+                if (type === 'vod' || type === 'series') {
+                    // "Continue Watching"
+                    const watchedItems = Object.values(userSettings.watched).filter(w => w.type === type && w.progress_sec > 0);
+                    if (watchedItems.length > 0) {
+                        grid.appendChild(createCategoryCard('Continue Watching', 'watched', type, { special: 'watched' }));
                     }
                     
-                } else {
-                    console.log(`Rendering ${newItems.length} items (full render).`);
-                    allData = newItems;
-                    renderContentGrid(allData, true); // Call the modified full-render function
-                }
-
-                // Hide loading spinner (if it was shown)
-                showLoading(false);
-            })
-            .catch(error => {
-                console.error("Error fetching content:", error);
-                showLoading(false);
-                showError(`Failed to load content: ${error.message}`);
-                // If we fail, go back to categories to not be stuck
-                if (!append) {
-                    showPage('CATEGORIES');
-                }
-            });
-        }
-
-        /**
-         * Fetches the detailed information for a series.
-         * @param {object} item - The series item (must have `series_id`).
-         */
-        function fetchSeriesDetails(item) {
-            // TODO: Use real API URL
-            const detailsUrl = `https://api.npoint.io/0e5b7b8a7c2c3b5a7d0d?id=${item.series_id}`; // Mock API
-            
-            showLoading(true, "Loading details...");
-            
-            fetch(detailsUrl)
-            .then(response => response.json())
-            .then(data => {
-                currentItem = data; // Store the full details
-                renderDetailsPage(data);
-                showPage('DETAILS');
-                showLoading(false);
-            })
-            .catch(error => {
-                console.error("Error fetching series details:", error);
-                showError("Failed to load series details.");
-                showLoading(false);
-            });
-        }
-
-
-        // --- 4. Page Rendering ----------------------------------------------
-
-        /**
-         * Switches the visible page.
-         * @param {string} pageId - The ID of the page to show (e.g., 'CATEGORIES', 'GRID').
-         */
-        function showPage(pageId) {
-            console.log(`Showing page: ${pageId}`);
-            // Find all pages and hide them
-            $$('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            
-            // Show the target page
-            const targetPage = $(`#page-${pageId}`);
-            if (targetPage) {
-                targetPage.classList.add('active');
-                currentPage = pageId;
-                
-                // Automatically focus the first item or restore focus
-                if (pageId === 'CATEGORIES') {
-                    let itemToFocus = null;
-                    if (globalState.categoryFocusId) {
-                        itemToFocus = $(`#${globalState.categoryFocusId}`);
-                    }
-                    if (!itemToFocus) {
-                        itemToFocus = $('#category-list .category-item');
-                    }
-                    if (itemToFocus) {
-                        itemToFocus.focus();
-                        itemToFocus.scrollIntoView({ behavior: 'auto', block: 'center' });
-                    }
-                } else if (pageId === 'GRID') {
-                    // Focus is handled by renderContentGrid(..., true)
-                } else if (pageId === 'DETAILS') {
-                    // Focus the 'Play' button by default
-                    const playButton = $('#details-play-button');
-                    if (playButton) {
-                        playButton.focus();
+                    // NEW: "To Watch"
+                    if (userSettings.toWatch.length > 0) {
+                         const toWatchItems = userSettings.toWatch
+                            .map(id => {
+                                const watchedItem = Object.values(userSettings.watched).find(w => 
+                                    (w.item.stream_id == id || w.item.series_id == id)
+                                );
+                                return watchedItem ? watchedItem : null;
+                            })
+                            .filter(entry => {
+                                if (!entry || !entry.item) return false;
+                                if (type === 'vod') return entry.type === 'vod';
+                                if (type === 'series') return entry.type === 'series';
+                                return false;
+                            });
+                        
+                        if (toWatchItems.length > 0) {
+                             grid.appendChild(createCategoryCard('To Watch', 'toWatch', type, { special: 'toWatch' }));
+                        }
+                            
                     }
                 }
                 
-            } else {
-                console.error(`Page with ID 'page-${pageId}' not found!`);
-            }
-        }
-
-        /**
-         * Renders the category list.
-         * @param {Array} categories - An array of category objects.
-         */
-        function renderCategories(categories) {
-            const list = $('#category-list');
-            list.innerHTML = ''; // Clear existing
-            
-            categories.forEach(category => {
-                const item = document.createElement('div');
-                item.className = 'category-item bg-card hover:bg-card/80 p-6 rounded-lg shadow-md cursor-pointer transition-all duration-300 transform-gpu focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-4 focus:ring-primary';
-                item.textContent = category.name;
-                item.tabIndex = 0; // Make it focusable
-                item.id = `category-item-${category.id}`;
-                
-                item.addEventListener('click', () => {
-                    onCategorySelect(category);
+                // 4. API Categories
+                categories.forEach(cat => {
+                    grid.appendChild(createCategoryCard(cat.category_name, cat.category_id, type));
                 });
                 
-                list.appendChild(item);
-            });
+                showPage('page-categories');
+                pushToNavStack('page-categories', { type });
+            }
         }
-
+        
+        function createCategoryCard(name, id, type, context = {}) {
+            const card = document.createElement('div');
+            card.className = 'nav-item p-6 rounded-lg bg-card text-center cursor-pointer transition-all hover:bg-opacity-80';
+            card.innerHTML = `<h3 class="text-lg font-bold text-main">${name}</h3>`;
+            card.onclick = () => loadContent(type, id, name, context);
+            card.setAttribute('tabindex', '0'); // <-- MAKE DIV FOCUSABLE
+            return card;
+        }
+        
+        // --- VIRTUALIZATION: Card Creation Function ---
         /**
-         * Creates a single grid card element.
-         * @param {object} item - The movie/series item data.
-         * @param {number} index - The global index of this item in `allData`.
+         * Creates a DOM element for a single content card (Movie or Series).
+         * This is used by both virtualized and non-virtualized renderers.
+         * @param {object} item - The movie or series item data.
+         * @param {string} type - 'vod' or 'series'.
+         * @param {object} [context={}] - The navigation context (e.g., for 'watched').
          * @returns {HTMLElement} The card element.
          */
-        function createGridCard(item, index) {
+        function createContentCard(item, type, context = {}) {
+            //const poster = item.movie_image || item.icon || item.stream_icon || 'https://placehold.co/400x600/1F2937/FFFFFF?text=Loading%20...';
+            const poster = 'https://placehold.co/400x600/1F2937/FFFFFF?text='+item.name;
+            const name = item.name;
+            const rating = item.rating_5based || item.rating || 0;
+            const stream_id = item.stream_id || item.series_id;
+            
+            const progressInfo = getWatchedProgress(stream_id);
+            const progressPercent = (progressInfo && progressInfo.duration_sec > 0) ? (progressInfo.progress_sec / progressInfo.duration_sec) * 100 : 0;
+            
+            let episodeTag = '';
+            if (type === 'series' && progressInfo && progressInfo.episode) {
+                const s = String(progressInfo.episode.season).padStart(2, '0');
+                const e = String(progressInfo.episode.episode_num).padStart(2, '0');
+                episodeTag = `<div class="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-xs font-bold text-main">S${s}E${e}</div>`;
+            }
+
             const card = document.createElement('div');
-            card.className = 'grid-item relative aspect-[2/3] bg-card rounded-md overflow-hidden transition-all duration-300 transform-gpu focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-4 focus:ring-primary focus:z-10';
-            card.tabIndex = 0;
+            card.className = 'nav-item bg-card rounded-lg overflow-hidden shadow-lg cursor-pointer aspect-[2/3] relative transition-all flex flex-col';
+            card.dataset.streamId = stream_id;
+            card.dataset.type = type;
+            card.dataset.item = JSON.stringify(item); // Store item data for fav/watch
+            card.setAttribute('tabindex', '0'); // <-- MAKE DIV FOCUSABLE
             
-            // Store item data on the element for later retrieval
-            card.itemData = item; 
+            card.innerHTML = `
+                <div class="relative w-full h-full">
+                    <img src="${poster}" alt="${name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600/1F2937/FFFFFF?text=No+Image'">
+                    <!-- Episode Tag (Series Only) -->
+                    ${episodeTag}
+                    <!-- Rating -->
+                    <div class="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded-full text-xs font-bold text-yellow-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        <span>${Number(rating).toFixed(1)}</span>
+                    </div>
+                    <!-- Favorite Icon -->
+                    <button id="fav-icon-${stream_id}" onclick="event.stopPropagation(); toggleFavorite('${stream_id}', '${type}', \`${CSS.escape(JSON.stringify(item))}\`)" class="nav-item-sm absolute bottom-12 left-2 p-1.5 bg-black/70 rounded-full">
+                        ${getHeartIcon(isFavorite(stream_id))}
+                    </button>
+                    <!-- Name -->
+                    <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                        <h4 class="font-semibold text-main truncate">${name}</h4>
+                    </div>
+                </div>
+                <!-- Progress Bar -->
+                ${progressPercent > 0 ? `
+                <div class="progress-bar w-full">
+                    <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+                </div>
+                ` : ''}
+            `;
             
-            // Unique ID for focus management
-            card.id = `grid-item-${item.stream_id || item.series_id || index}`;
-
-            let title = item.name || 'Unknown Title';
-            let poster = item.cover || item.poster || item.movie_image || item.stream_icon;
-
-            // Handle series data structure (if different)
-            if (item.series_id && item.info) {
-                poster = item.info.cover || item.info.movie_image || poster;
-                title = item.name;
-            }
-            
-            // Add poster image
-            const img = document.createElement('img');
-            img.className = 'w-full h-full object-cover';
-            img.src = poster || 'https://placehold.co/200x300/1F2937/FFFFFF?text=No+Poster';
-            img.alt = title;
-            img.loading = 'lazy'; // Use lazy loading for performance
-            img.onerror = (e) => { 
-                e.target.src = 'https://placehold.co/200x300/1F2937/FFFFFF?text=No+Poster';
-            };
-            card.appendChild(img);
-
-            // Add title overlay
-            const titleOverlay = document.createElement('div');
-            titleOverlay.className = 'absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent';
-            titleOverlay.innerHTML = `<h3 class="text-text text-sm font-semibold truncate">${title}</h3>`;
-            card.appendChild(titleOverlay);
-            
-            // Add progress bar if watch progress > 0
-            const progressData = userSettings.watchProgress[item.stream_id];
-            if (progressData) {
-                if (progressData.percentage > 5 && progressData.percentage < 95) { // Only show if partially watched
-                    const progressElement = document.createElement('div');
-                    progressElement.className = 'absolute bottom-0 left-0 h-1 bg-primary';
-                    progressElement.style.width = `${progressData.percentage}%`;
-                    card.appendChild(progressElement);
+            card.onclick = () => {
+                const progressInfo = getWatchedProgress(stream_id);
+                const startTime = (context.special === 'watched' && progressInfo) ? progressInfo.progress_sec : 0;
+                
+                if (type === 'vod') {
+                    handleMovieClick(item, startTime); // MODIFIED: Show modal first
+                } else if (type === 'live') {
+                    playLive(item);
+                } else if (type === 'series') {
+                    if (context.special === 'watched' && progressInfo && progressInfo.episode) {
+                        // "Continue Watching" clicked - play episode directly
+                        playEpisode(progressInfo.episode, item, startTime);
+                    } else {
+                        // Show series details page
+                        loadSeriesInfo(item);
+                    }
                 }
-            }
-
-            // Add 'click' (Enter) listener
-            card.addEventListener('click', () => {
-                // When clicked, update the global state
-                globalState.lastFocusedId = card.id;
-                globalState.lastFocusedIndex = index; // 'index' is the globalIndex
-                onGridItemSelect(item);
-            });
-            
+            };
             return card;
         }
 
+        // --- VIRTUALIZATION: Initialization ---
         /**
-         * Renders the content grid for movies/series.
-         * @param {Array} items - An array of item objects.
-         * @param {boolean} forceFocus - Whether to force focus on the first/last item.
+         * Sets up the DOM and state for a virtualized list.
+         * @param {Array} items - The full list of items to virtualize.
+         * @param {string} type - 'vod' or 'series'.
+         * @param {object} context - The navigation context.
          */
-        function renderContentGrid(items, forceFocus = false) {
-            console.log("Rendering content grid (full render)...");
-            const grid = $('#content-grid');
-            grid.innerHTML = ''; // Clear the grid for a full render
+        function initVirtualList(items, type, context) {
+            virtualListState.isVirtual = true;
+            virtualListState.fullData = items;
+            virtualListState.type = type;
+            virtualListState.context = context;
+            virtualListState.pageElement = $('#page-content');
+            virtualListState.gridElement = $('#content-grid');
+            virtualListState.lastScrollTop = -1; // Force initial render
             
-            items.forEach((item, index) => {
-                const card = createGridCard(item, index);
-                grid.appendChild(card);
-            });
+            const grid = virtualListState.gridElement;
+            const originalClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4';
             
-            if (forceFocus) {
-                // Try to restore focus to the last selected item
-                let itemToFocus = null;
-                if (globalState.lastFocusedId) {
-                    itemToFocus = $(`#${globalState.lastFocusedId}`);
-                }
-                
-                // If not found, or no last focused, focus the first item
-                if (!itemToFocus) {
-                    itemToFocus = grid.querySelector('.grid-item');
-                }
-                
-                if (itemToFocus) {
-                    itemToFocus.focus();
-                    itemToFocus.scrollIntoView({ behavior: 'auto', block: 'center' });
-                }
+            // 1. Clear grid and apply "sizer" styles
+            grid.innerHTML = '';
+            grid.className = 'virtual-sizer'; // Use CSS class
+            
+            // 2. Create the rendering window
+            if (!virtualListState.windowElement) {
+                virtualListState.windowElement = document.createElement('div');
+                virtualListState.windowElement.id = 'virtual-grid-window';
+                grid.appendChild(virtualListState.windowElement);
             }
-        }
-        
-        /**
-         * Appends new items to the content grid without refreshing.
-         * @param {Array} newItems - An array of new item objects to append.
-         */
-        function appendContentGrid(newItems) {
-            console.log("Appending new items to grid...");
-            const grid = $('#content-grid');
-            const existingItemCount = grid.children.length;
+            const windowEl = virtualListState.windowElement;
+            windowEl.className = originalClasses; // Add grid classes to the window
             
-            newItems.forEach((item, index) => {
-                // The index needs to be global, not relative to newItems
-                const globalIndex = existingItemCount + index;
-                const card = createGridCard(item, globalIndex);
-                grid.appendChild(card);
-            });
+            // 3. Measure a sample item to get height and columns
+            measureVirtualItem(); // This will update state
+            
+            // 4. Calculate total height
+            const totalRows = Math.ceil(virtualListState.fullData.length / virtualListState.columns);
+            const totalScrollHeight = totalRows * virtualListState.itemHeight;
+            grid.style.height = `${totalScrollHeight}px`;
+
+            // 5. Attach scroll listener
+            virtualListState.pageElement.onscroll = handleVirtualScroll;
+
+            // 6. Initial render
+            renderVirtualWindow();
         }
 
+        // --- VIRTUALIZATION: Measurement ---
         /**
-         * Renders the details page for a series.
-         * @param {object} seriesData - The full data object for the series.
+         * Measures a sample item to determine column count and item height.
          */
-        function renderDetailsPage(seriesData) {
-            // Header
-            $('#details-backdrop').style.backgroundImage = `url(${seriesData.info.backdrop_path || ''})`;
-            $('#details-poster').src = seriesData.info.cover || 'https://placehold.co/200x300/1F2937/FFFFFF?text=No+Poster';
-            $('#details-title').textContent = seriesData.info.name || 'Unknown Series';
-            $('#details-metadata').textContent = `${seriesData.info.releaseDate || ''} • ${seriesData.info.genre || ''}`;
-            $('#details-plot').textContent = seriesData.info.plot || 'No description available.';
-
-            // Season List
-            const seasonList = $('#season-list');
-            seasonList.innerHTML = '';
-            if (seriesData.seasons && seriesData.seasons.length > 0) {
-                seriesData.seasons.forEach((season) => {
-                    const item = document.createElement('button');
-                    item.className = 'season-item bg-card hover:bg-card/80 px-5 py-3 rounded-md text-text-alt font-semibold transition-all duration-300 transform-gpu focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-4 focus:ring-primary';
-                    item.textContent = `Season ${season.season_number}`;
-                    item.tabIndex = 0;
-                    item.dataset.seasonNumber = season.season_number;
-                    
-                    item.addEventListener('click', () => {
-                        renderEpisodeList(seriesData.episodes[season.season_number]);
-                        // Update focus style
-                        $$('.season-item').forEach(btn => btn.classList.remove('bg-primary', 'text-white'));
-                        item.classList.add('bg-primary', 'text-white');
-                    });
-                    
-                    seasonList.appendChild(item);
-                });
+         function getGridColumns() {
+            const width = window.innerWidth;
+            if (width >= 1024) {
+                return 6; // lg:grid-cols-6
+            } else if (width >= 768) {
+                return 4; // md:grid-cols-4
+            } else if (width >= 640) {
+                return 3; // sm:grid-cols-3
             } else {
-                seasonList.innerHTML = '<p class="text-text-alt">No season information available.</p>';
+                return 2; // default grid-cols-2
+            }
+        }
+        function measureVirtualItem() {
+            const windowEl = virtualListState.windowElement;
+            if (!windowEl || virtualListState.fullData.length === 0) return;
+
+            // Get columns from computed style
+            const gridStyle = window.getComputedStyle(windowEl);
+            //virtualListState.columns = gridStyle.getPropertyValue('grid-template-columns').split(' ').length;
+            virtualListState.columns = getGridColumns();
+            
+            // Measure item height by creating a dummy
+            const dummyCard = createContentCard(virtualListState.fullData[0], virtualListState.type, virtualListState.context);
+            dummyCard.style.visibility = 'hidden'; // Keep in layout but invisible
+            windowEl.appendChild(dummyCard);
+            
+            // Get height including margin/gap
+            const cardStyle = window.getComputedStyle(dummyCard);
+            const margin = parseFloat(cardStyle.marginTop) + parseFloat(cardStyle.marginBottom);
+            const gap = parseFloat(gridStyle.gap) || 0;
+            
+            virtualListState.itemHeight = dummyCard.offsetHeight + Math.max(margin, gap);
+            
+            windowEl.removeChild(dummyCard); // Clean up
+
+            if(virtualListState.itemHeight < 50 || isNaN(virtualListState.itemHeight)) { // Sanity check
+                console.warn("Measured item height is very small, using default.");
+                virtualListState.itemHeight = 250; // Fallback
             }
             
-            // Episode List (render first season by default)
-            const firstSeasonNum = seriesData.seasons.length > 0 ? seriesData.seasons[0].season_number : 1;
-            renderEpisodeList(seriesData.episodes[firstSeasonNum]);
-            // Highlight first season
-            const firstSeasonBtn = $(`#season-list .season-item[data-season-number='${firstSeasonNum}']`);
-            if(firstSeasonBtn) {
-                firstSeasonBtn.classList.add('bg-primary', 'text-white');
+            console.log(`Measured: ${virtualListState.columns} cols, ${virtualListState.itemHeight}px height`);
+        }
+
+        // --- VIRTUALIZATION: Scroll Handler ---
+        /**
+         * Handles the onscroll event for the virtualized page.
+         */
+        function handleVirtualScroll(event) {
+            const scrollTop = event.target.scrollTop;
+            // Only render if scrolled more than half an item's height
+            if (Math.abs(scrollTop - virtualListState.lastScrollTop) > virtualListState.itemHeight / 2) {
+                renderVirtualWindow();
+                virtualListState.lastScrollTop = scrollTop;
+            }
+        }
+
+        // --- VIRTUALIZATION: Render Function ---
+        /**
+         * Renders the visible "window" of items.
+         */
+        function renderVirtualWindow() {
+            if (!virtualListState.isVirtual) return;
+
+            const { 
+                config, 
+                fullData, 
+                type, 
+                context, 
+                pageElement, 
+                windowElement, 
+                itemHeight, 
+                columns
+            } = virtualListState;
+
+            if (!pageElement || !windowElement || itemHeight <= 0 || columns <= 0) return;
+
+            const scrollTop = pageElement.scrollTop;
+            const pageHeight = pageElement.clientHeight;
+            
+            // Calculate row window
+            const visibleRows = Math.ceil(pageHeight / itemHeight);
+            const totalRows = Math.ceil(fullData.length / columns);
+
+            const startRow = Math.max(0, Math.floor(scrollTop / itemHeight) - config.bufferRows);
+            const endRow = Math.min(
+                totalRows, // Total rows
+                startRow + visibleRows + (config.bufferRows * 2)
+            );
+
+            // Calculate item window
+            const startIndex = Math.max(0, startRow * columns);
+            const endIndex = Math.min(fullData.length, endRow * columns);
+            
+            // Calculate the Y offset for the window
+            const offsetY = startRow * itemHeight;
+
+            // Apply transform to position the window
+            windowElement.style.transform = `translateY(${offsetY}px)`;
+            
+            // Render items
+            windowElement.innerHTML = ''; // Clear *only* the window
+            const fragment = document.createDocumentFragment();
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = fullData[i];
+                if (item) {
+                    const card = createContentCard(item, type, context);
+                    fragment.appendChild(card);
+                }
+            }
+            windowElement.appendChild(fragment);
+
+            // console.log(`Rendered items ${startIndex} to ${endIndex}`);
+        }
+        
+        // --- UPDATED loadContent ---
+        /**
+         * Loads content (Live, VOD, Series) and decides whether to virtualize.
+         */
+        async function loadContent(type, categoryId, categoryName = 'Content', context = {}) {
+            let items = [];
+            let title = categoryName;
+
+            if (context.special === 'watched') {
+                items = Object.values(userSettings.watched)
+                    .filter(w => w.type === type && w.progress_sec > 0)
+                    .map(w => w.item);
+            } else if (context.special === 'favorites') {
+                 items = userSettings.favorites
+                    .map(id => {
+                         const watchedItem = Object.values(userSettings.watched).find(w => 
+                            (w.item.stream_id == id || w.item.series_id == id)
+                        );
+                        return watchedItem ? watchedItem : null;
+                    })
+                    .filter(entry => { // Filter by type
+                        if (!entry || !entry.item) return false;
+                        if (type === 'live') return entry.type === 'live';
+                        if (type === 'vod') return entry.type === 'vod';
+                        if (type === 'series') return entry.type === 'series';
+                        return false;
+                    })
+                    .map(entry => entry.item); // Get the item
+            } else if (context.special === 'toWatch') { // NEW: Handle 'toWatch'
+                 items = userSettings.toWatch
+                    .map(id => {
+                         const watchedItem = Object.values(userSettings.watched).find(w => 
+                            (w.item.stream_id == id || w.item.series_id == id)
+                        );
+                        return watchedItem ? watchedItem : null;
+                    })
+                    .filter(entry => { // Filter by type
+                        if (!entry || !entry.item) return false;
+                        if (type === 'vod') return entry.type === 'vod';
+                        if (type === 'series') return entry.type === 'series';
+                        return false;
+                    })
+                    .map(entry => entry.item); // Get the item
+            } else {
+                let action = '';
+                if (type === 'live') action = 'get_live_streams';
+                else if (type === 'vod') action = 'get_vod_streams';
+                else if (type === 'series') action = 'get_series';
+
+                const params = { action };
+                if (categoryId !== 'all') params.category_id = categoryId;
+                items = await fetchXtream(params);
+            }
+
+            if (items && Array.isArray(items)) {
+                $('#global-header-title').textContent = `${title} (${items.length})`;
+                
+                // *** FIX: Clean up previous virtual list *before* clearing grid ***
+                if (virtualListState.isVirtual) {
+                    cleanupVirtualisation();
+                }
+                // *** END FIX ***
+                
+                const grid = $('#content-grid');
+                grid.innerHTML = ''; // Clear old
+
+                if (items.length === 0) {
+                    // Ensure grid styles are reset (cleanup might have already done this, but safe)
+                    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
+                    grid.style.height = 'auto';
+                    grid.style.position = 'static';
+                    grid.innerHTML = `<p class="text-alt col-span-full">No items found.</p>`;
+                    
+                    showPage('page-content'); // Show page even if empty
+                    pushToNavStack('page-content', { type, categoryId, categoryName, context });
+                    return;
+                }
+
+                // --- VIRTUALIZATION DECISION ---
+                const threshold = virtualListState.config.virtualizeThreshold;
+                if ((type === 'vod' || type === 'series') && items.length > threshold) {
+                    // *** VIRTUALIZED PATH ***
+                    console.log(`Initializing virtual list for ${items.length} items.`);
+                    initVirtualList(items, type, context); 
+                } else {
+                    // *** NON-VIRTUALIZED PATH (Small list) ***
+                    console.log(`Rendering non-virtualized list for ${items.length} items.`);
+                    // Ensure grid is reset to normal
+                    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4';
+                    grid.style.height = 'auto';
+                    grid.style.position = 'static';
+                    
+                    const fragment = document.createDocumentFragment();
+                    items.forEach(item => {
+                        const card = createContentCard(item, type, context);
+                        fragment.appendChild(card);
+                    });
+                    grid.appendChild(fragment); // Append all at once
+                }
+                // --- END DECISION ---
+                
+                showPage('page-content');
+                pushToNavStack('page-content', { type, categoryId, categoryName, context });
             }
         }
         
-        /**
-         * Renders the list of episodes for a given season.
-         * @param {Array} episodes - An array of episode objects.
-         */
-        function renderEpisodeList(episodes) {
-            const list = $('#episode-list');
-            list.innerHTML = '';
+        function getHeartIcon(isFav) {
+             return isFav ? 
+             '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-primary" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>' : 
+             '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
+        }
+        
+        // NEW: Icon for Watch Later
+        function getWatchLaterIcon(isToWatch) {
+            return isToWatch ?
+            '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-primary" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-3.5L5 18V4z" /></svg>' :
+            '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>';
+        }
+
+        
+        // === SERIES IMPLEMENTATION ===
+        
+        async function loadSeriesInfo(seriesItem) {
+            showLoader(true);
+            try {
+                const info = await fetchXtream({ action: 'get_series_info', series_id: seriesItem.series_id });
+                if (!info) throw new Error("Could not load series info.");
+
+                // 1. Populate Details
+                $('#global-header-title').textContent = info.info.name || seriesItem.name;
+                $('#series-cover-image').src = info.info.cover || seriesItem.cover || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
+                $('#series-title').textContent = info.info.name || seriesItem.name;
+                $('#series-plot').textContent = info.info.plot || 'No description available.';
+                $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
+
+                // Create a complete item from the available info to save to favorites/toWatch
+                const fullSeriesItem = { ...seriesItem, ...info.info, series_id: seriesItem.series_id, stream_type: 'series' };
+                const seriesId = seriesItem.series_id;
+
+                // --- FAV BUTTON LOGIC ---
+                const seriesFavButton = $('#series-fav-button');
+                const updateSeriesFavIcon = () => {
+                    seriesFavButton.innerHTML = getHeartIcon(isFavorite(seriesId));
+                };
+                seriesFavButton.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleFavorite(seriesId, 'series', fullSeriesItem); 
+                    updateSeriesFavIcon();
+                };
+                updateSeriesFavIcon();
+                
+                // --- NEW WATCH LATER LOGIC ---
+                const seriesWatchLaterButton = $('#series-watch-later-button');
+                const updateSeriesWatchLaterIcon = () => {
+                    seriesWatchLaterButton.innerHTML = getWatchLaterIcon(isToWatch(seriesId));
+                };
+                seriesWatchLaterButton.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleWatchLater(seriesId, 'series', fullSeriesItem);
+                    updateSeriesWatchLaterIcon();
+                };
+                updateSeriesWatchLaterIcon();
+                // --- END NEW LOGIC ---
+
+
+                // 2. Populate Seasons
+                const seasonTabs = $('#series-seasons-tabs');
+                seasonTabs.innerHTML = '';
+                const episodesBySeason = info.episodes;
+                
+                if (!episodesBySeason || Object.keys(episodesBySeason).length === 0) {
+                     $('#series-episodes-list').innerHTML = '<p class="text-alt">No episodes found for this series.</p>';
+                     showLoader(false);
+                     showPage('page-series-details');
+                     pushToNavStack('page-series-details', { seriesItem: fullSeriesItem }); // Pass full item
+                     return;
+                }
+
+                const seasonNumbers = Object.keys(episodesBySeason).sort((a, b) => Number(a) - Number(b));
+                
+                seasonNumbers.forEach((seasonNum, index) => {
+                    const tab = document.createElement('button');
+                    tab.className = 'nav-item season-tab px-4 py-2 rounded-lg bg-alt text-alt font-semibold';
+                    tab.textContent = `Season ${seasonNum}`;
+                    tab.dataset.seasonNum = seasonNum;
+                    tab.onclick = () => {
+                        // Update active tab style
+                        $$('.season-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        // Load episodes
+                        loadSeasonEpisodes(episodesBySeason[seasonNum], fullSeriesItem); // Pass full item
+                    };
+                    seasonTabs.appendChild(tab);
+                });
+
+                // 3. Load First Season's Episodes
+                if (seasonNumbers.length > 0) {
+                    const firstSeasonKey = seasonNumbers[0];
+                    loadSeasonEpisodes(episodesBySeason[firstSeasonKey], fullSeriesItem); // Pass full item
+                    // Set first tab as active
+                    setTimeout(() => {
+                         const firstTab = $('.season-tab');
+                         if(firstTab) firstTab.classList.add('active');
+                    }, 0);
+                }
+
+                showPage('page-series-details');
+                pushToNavStack('page-series-details', { seriesItem: fullSeriesItem }); // Pass full item
+
+            } catch (e) {
+                console.error("Error loading series info:", e);
+                showError("Could not load series details.");
+            } finally {
+                showLoader(false);
+            }
+        }
+        
+        function loadSeasonEpisodes(episodes, seriesItem) {
+            const episodesList = $('#series-episodes-list');
+            episodesList.innerHTML = '';
             
             if (!episodes || episodes.length === 0) {
-                list.innerHTML = '<p class="text-text-alt">No episodes found for this season.</p>';
+                episodesList.innerHTML = '<p class="text-alt">No episodes found for this season.</p>';
                 return;
             }
-            
-            episodes.forEach((ep) => {
-                const item = document.createElement('div');
-                item.className = 'episode-item bg-card hover:bg-card/80 p-4 rounded-lg shadow-sm flex items-center space-x-4 cursor-pointer transition-all duration-300 transform-gpu focus:scale-105 focus:shadow-lg focus:outline-none focus:ring-4 focus:ring-primary';
-                item.tabIndex = 0;
+
+            episodes.forEach(episode => {
+                const epCard = document.createElement('button');
+                epCard.className = 'nav-item w-full p-4 rounded-lg bg-card text-left text-main hover:bg-opacity-80 flex justify-between items-center';
                 
-                // Poster
-                const img = document.createElement('img');
-                img.src = ep.info.movie_image || 'https://placehold.co/150x84/1F2937/FFFFFF?text=No+Image';
-                img.alt = ep.title;
-                img.className = 'w-36 h-20 object-cover rounded-md bg-bg-alt';
+                const progress = getWatchedProgress(seriesItem.series_id, episode.id);
+                const progressPercent = (progress && progress.duration_sec > 0) ? (progress.progress_sec / progress.duration_sec) * 100 : 0;
                 
-                // Info
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'flex-1';
-                infoDiv.innerHTML = `
-                    <h4 class="text-lg font-semibold text-text">${ep.episode_num}. ${ep.title}</h4>
-                    <p class="text-sm text-text-alt line-clamp-2 mt-1">${ep.info.plot || 'No description'}</p>
+                epCard.innerHTML = `
+                    <div class="flex-1">
+                        <span class="text-primary font-bold">E${episode.episode_num}</span>: ${episode.title}
+                        ${progressPercent > 0 ? `
+                        <div class="progress-bar w-full mt-2">
+                            <div class="progress-bar-inner" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <span class="text-alt text-sm">${episode.duration || ''}</span>
                 `;
                 
-                item.appendChild(img);
-                item.appendChild(infoDiv);
+                epCard.onclick = () => {
+                    const startTime = progress ? progress.progress_sec : 0;
+                    playEpisode(episode, seriesItem, startTime);
+                };
                 
-                item.addEventListener('click', () => {
-                    onEpisodeSelect(ep);
-                });
-                
-                list.appendChild(item);
+                episodesList.appendChild(epCard);
             });
-        }
-
-
-        // --- 5. Event Handlers & Navigation ---------------------------------
-
-        /**
-         * Handles all keydown events for the app.
-         * @param {KeyboardEvent} e - The keydown event.
-         */
-        function handleKey(e) {
-            console.log(`Key pressed: ${e.keyCode} on page: ${currentPage}`);
             
-            // Global 'Back' key handling
-            if (e.keyCode === KEY_BACK || e.keyCode === KEY_RETURN) {
-                if (currentPage === 'GRID') {
-                    e.preventDefault();
-                    globalState.lastFocusedId = null; // Clear last focused item
-                    showPage('CATEGORIES');
-                    return;
-                }
-                if (currentPage === 'DETAILS') {
-                    e.preventDefault();
-                    // Go back to grid, focus should be restored
-                    showPage('GRID'); 
-                    return;
-                }
-                if (currentPage === 'CATEGORIES') {
-                    e.preventDefault();
-                    // Exit app?
-                    console.log("At top level. Exit app?");
-                    // tizen.application.getCurrentApplication().exit();
-                    return;
-                }
-            }
-
-            // Page-specific key handling
-            switch (currentPage) {
-                case 'CATEGORIES':
-                    handleCategoryKey(e);
-                    break;
-                case 'GRID':
-                    handleGridKey(e);
-                    break;
-                case 'DETAILS':
-                    handleDetailsKey(e);
-                    break;
-            }
+             // Focus first episode
+             const firstEpisode = episodesList.querySelector('.nav-item');
+             if (firstEpisode) {
+                 firstEpisode.focus();
+             }
         }
         
-        /**
-         * Handles navigation within the 'CATEGORIES' page.
-         */
-        function handleCategoryKey(e) {
-            const focused = document.activeElement;
-            if (!focused || !focused.classList.contains('category-item')) {
-                const firstItem = $('#category-list .category-item');
-                if (firstItem) firstItem.focus();
-                return;
-            }
-
-            const items = Array.from($$('#category-list .category-item'));
-            const currentIndex = items.indexOf(focused);
-            if (currentIndex === -1) return;
+        function playEpisode(episode, seriesItem, startTime = 0) {
+            currentItem = seriesItem; // Store series item
+            currentEpisode = episode; // Store episode item
+            console.log(currentEpisode)
+            showPage('page-player');
+            pushToNavStack('page-player');
             
-            // Simple grid navigation
-            // TODO: Make this smarter with dynamic row calculation
-            const itemsPerRow = 4; // Assume 4 for now
-            let nextIndex = -1;
-
-            switch (e.keyCode) {
-                case KEY_UP:
-                    nextIndex = currentIndex - itemsPerRow;
-                    break;
-                case KEY_DOWN:
-                    nextIndex = currentIndex + itemsPerRow;
-                    break;
-                case KEY_LEFT:
-                    nextIndex = currentIndex - 1;
-                    if (currentIndex % itemsPerRow === 0) nextIndex = -1; // Stop at left edge
-                    break;
-                case KEY_RIGHT:
-                    nextIndex = currentIndex + 1;
-                    if ((currentIndex + 1) % itemsPerRow === 0) nextIndex = -1; // Stop at right edge
-                    break;
-                case KEY_ENTER:
-                case KEY_OK:
-                    onCategorySelect(currentCategories[currentIndex]); // Assuming order matches
-                    return;
-            }
-
-            if (nextIndex >= 0 && nextIndex < items.length) {
-                const nextItem = items[nextIndex];
-                if (nextItem) {
-                    nextItem.focus();
-                    nextItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }
-        
-        /**
-         * Handles navigation within the 'GRID' page.
-         */
-        function handleGridKey(e) {
-            const focused = document.activeElement;
-            if (!focused || !focused.classList.contains('grid-item')) {
-                const firstItem = $('#content-grid .grid-item');
-                if (firstItem) {
-                    firstItem.focus();
-                    firstItem.scrollIntoView({ behavior: 'auto', block: 'center' });
-                }
-                return;
-            }
-
-            const items = Array.from($$('#content-grid .grid-item'));
-            const currentIndex = items.indexOf(focused);
-            if (currentIndex === -1) {
-                console.warn("Focused item not in grid item list!");
-                return;
-            }
-            
-            // Store current index in global state in case of selection
-            globalState.lastFocusedIndex = currentIndex;
-            globalState.lastFocusedId = focused.id; // Also store ID
-
-            const itemsPerRow = calculateItemsPerRow();
-            let nextIndex = -1;
-
-            switch (e.keyCode) {
-                case KEY_UP:
-                    nextIndex = currentIndex - itemsPerRow;
-                    break;
-                case KEY_DOWN:
-                    nextIndex = currentIndex + itemsPerRow;
-                    break;
-                case KEY_LEFT:
-                    nextIndex = currentIndex - 1;
-                    if (currentIndex % itemsPerRow === 0) nextIndex = -1; // Stop at left edge
-                    break;
-                case KEY_RIGHT:
-                    nextIndex = currentIndex + 1;
-                    if ((currentIndex + 1) % itemsPerRow === 0) nextIndex = -1; // Stop at right edge
-                    break;
-                case KEY_ENTER:
-                case KEY_OK:
-                    onGridItemSelect(focused.itemData);
-                    return; // Don't navigate
-                // Back/Return is handled globally
-            }
-
-            if (nextIndex >= 0 && nextIndex < items.length) {
-                const nextItem = items[nextIndex];
-                if (nextItem) {
-                    nextItem.focus();
-                    // Use 'nearest' to avoid unnecessary scrolling if half-visible
-                    nextItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            } else if (e.keyCode === KEY_DOWN) {
-                // Reached the bottom, try to load more
-                console.log("Grid nav: Reached bottom, checking for next page.");
-                if (currentCategoryLink && currentCategoryLink.next) {
-                    showLoading(true); // Show loading since it's a key action
-                    console.log("Grid nav: Fetching next page:", currentCategoryLink.next);
-                    
-                    // **** NEW: Store the index we want to focus after load ****
-                    // We were at 'currentIndex', we want to go to 'currentIndex + itemsPerRow'
-                    globalState.focusAfterLoad = currentIndex + itemsPerRow;
-                    
-                    fetchContent(currentCategoryLink.next, true); // 'true' for append
-                }
-            }
-        }
-        
-        /**
-         * Handles navigation within the 'DETAILS' page.
-         */
-        function handleDetailsKey(e) {
-            // TODO: Implement spatial navigation for details page
-            // This is complex because the layout isn't a simple grid.
-            // You need to manually define 'up', 'down', 'left', 'right' for each element.
-            console.log("Details page navigation not fully implemented.");
-        }
-
-        /**
-        * Called when a category is selected.
-        * @param {object} category - The selected category object.
-        */
-        function onCategorySelect(category) {
-            console.log("Category selected:", category);
-            globalState.categoryFocusId = `category-item-${category.id}`; // Save focus
-            $('#grid-title').textContent = category.name;
-            fetchContent(category.url, false); // false = full refresh
-            showPage('GRID');
-        }
-        
-        /**
-         * Called when a grid item (movie/series) is selected.
-         * @param {object} item - The selected item object.
-         */
-        function onGridItemSelect(item) {
-            console.log("Grid item selected:", item);
-            currentItem = item; // Store as the "current" item
-            
-            if (item.stream_type === 'movie' || !item.series_id) {
-                // It's a movie, play it directly
-                currentEpisode = null; // Ensure no episode is set
-                playItem(item);
-            } else {
-                // It's a series, fetch details
-                fetchSeriesDetails(item);
-            }
-        }
-        
-        /**
-         * Called when an episode is selected from the details page.
-         * @param {object} episode - The selected episode object.
-         */
-        function onEpisodeSelect(episode) {
-            console.log("Episode selected:", episode);
-            currentEpisode = episode; // Store the specific episode
-            // `currentItem` should already be the series
-            playItem(currentItem, episode);
-        }
-        
-        /**
-         * Calculates how many items are in a single row of the content grid.
-         * @returns {number} The number of items per row.
-         */
-        function calculateItemsPerRow() {
-            const grid = $('#content-grid');
-            if (!grid) return 5; // Default fallback
-            
-            const gridStyle = window.getComputedStyle(grid);
-            const gridCols = gridStyle.getPropertyValue('grid-template-columns');
-            // This will return something like "repeat(7, minmax(0, 1fr))"
-            const match = gridCols.match(/repeat\((\d+)/);
-            
-            if (match && match[1]) {
-                return parseInt(match[1], 10);
-            }
-            
-            // Fallback for different Tailwind responsive sizes
-            const screenWidth = window.innerWidth;
-            if (screenWidth >= 1280) return 7; // xl
-            if (screenWidth >= 1024) return 6; // lg
-            if (screenWidth >= 768) return 5; // md
-            if (screenWidth >= 640) return 4; // sm
-            return 3; // default
-        }
-
-
-        // --- 6. Media Player Logic ------------------------------------------
-        
-        /**
-         * Main function to play a video.
-         * @param {object} item - The movie or series item.
-         * @param {object} [episode] - The specific episode (if series).
-         */
-        function playItem(item, episode = null) {
-            let streamUrl, streamId;
-            
-            if (episode) {
-                // Playing an episode
-                streamUrl = `${userSettings.m3uUrl}/series/${item.series_id}/${episode.stream_id}.m3u8`; // Example URL
-                streamId = episode.stream_id;
-            } else {
-                // Playing a movie
-                streamUrl = `${userSettings.m3uUrl}/movie/${item.stream_id}.m3u8`; // Example URL
-                streamId = item.stream_id;
-            }
-            
-            console.log(`Playing stream: ${streamUrl} (ID: ${streamId})`);
-            
-            // Stop any existing player
-            stopPlayer();
-            
-            // Get saved progress
-            const savedProgress = userSettings.watchProgress[streamId];
-            const startTime = savedProgress ? savedProgress.position : 0;
-            
-            if (isTizen) {
-                playTizen(streamUrl, startTime);
-            } else {
-                playWeb(streamUrl, startTime);
-            }
-            
-            // Start periodic progress saving
-            clearInterval(saveProgressInterval);
-            saveProgressInterval = setInterval(saveCurrentProgress, 5000); // Save every 5 seconds
-        }
-        
-        /**
-         * Saves the current playback progress to userSettings.
-         */
-        function saveCurrentProgress() {
-            let position, duration, streamId;
-            
-            if (isTizen && tizenAvPlayer) {
-                try {
-                    position = tizenAvPlayer.getCurrentTime();
-                    duration = tizenAvPlayer.getDuration();
-                } catch (e) {
-                    console.warn("Failed to get Tizen player time:", e);
-                    return;
-                }
-            } else {
-                const player = $('#web-video-player');
-                if (player && !player.paused) {
-                    position = Math.floor(player.currentTime * 1000); // to ms
-                    duration = Math.floor(player.duration * 1000); // to ms
-                } else {
-                    return; // Don't save if not playing
-                }
-            }
-            
-            if (currentEpisode) {
-                streamId = currentEpisode.stream_id;
-            } else if (currentItem) {
-                streamId = currentItem.stream_id;
-            } else {
-                return; // No item context
-            }
-            
-            if (!streamId || !duration || duration <= 0 || !position) {
-                return; // Invalid data
-            }
-            
-            const percentage = (position / duration) * 100;
-            
-            userSettings.watchProgress[streamId] = {
-                position: position,
-                duration: duration,
-                percentage: percentage
+            const ext = episode.container_extension || 'mp4';
+            const streamUrl = `${userSettings.xtreamConfig.host}/series/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${episode.stream_id}.${ext}`;
+            const details = {
+                name: `${seriesItem.name} - S${String(episode.season).padStart(2, '0')}E${String(episode.episode_num).padStart(2, '0')}`,
+                rating: seriesItem.rating_5based || seriesItem.rating
             };
             
-            // console.log(`Progress saved for ${streamId}: ${position}ms / ${duration}ms (${percentage.toFixed(2)}%)`);
+            if (isTizen) startTizenPlayer(streamUrl, details, startTime, 'series');
+            else startWebPlayer(streamUrl, details, startTime, 'series');
+        }
+
+        // === Player Logic ===
+        
+        /**
+         * NEW: Handles the click on a movie item.
+         * Tries to fetch info and show modal. Falls back to direct play.
+         */
+        async function handleMovieClick(item, startTime = 0) {
+            currentItem = item; // Store for progress saving
+            currentEpisode = null;
+            showLoader(true);
+            
+            try {
+                const info = await fetchXtream({ action: 'get_vod_info', vod_id: item.stream_id });
+                if (!info || !info.movie_data) throw new Error("Could not load movie info.");
+                
+                // Info fetched, show modal
+                showMovieDetailsModal(info, item, startTime);
+
+            } catch(e) {
+                console.warn("Failed to get movie info, playing directly.", e);
+                // Info failed, play directly
+                playMovie(item, startTime, null);
+            } finally {
+                showLoader(false);
+            }
         }
 
         /**
-         * Plays a stream using the HTML5 <video> tag (browser).
-         * @param {string} url - The URL of the stream.
-         * @param {number} startTime - The time to seek to (in ms).
+         * NEW: Shows the movie details modal
          */
-        function playWeb(url, startTime) {
-            console.log(`Playing with Web Player (start: ${startTime}ms)`);
+        function showMovieDetailsModal(info, item, startTime) {
+            lastFocusedElement = document.activeElement; // Save focus
+            
+            // Populate modal fields
+            $('#modal-movie-poster').src = info.info.movie_image || item.movie_image || 'https://placehold.co/400x600/374151/FFFFFF?text=No+Image';
+            $('#modal-movie-title').textContent = info.info.name || item.name;
+            $('#modal-movie-year').textContent = info.info.releasedate || 'N/A';
+            $('#modal-movie-duration').textContent = info.info.duration || 'N/A';
+            $('#modal-movie-rating-text').textContent = Number(info.info.rating_5based || item.rating || 0).toFixed(1);
+            $('#modal-movie-plot').textContent = info.info.plot || 'No description available.';
+            $('#modal-movie-cast').textContent = info.info.cast || 'N/tA';
+            $('#modal-movie-genre').textContent = info.info.genre || 'N/A';
+            
+            // Create a complete item from the available info to save
+            const fullVodItem = { ...item, ...info.info, stream_id: item.stream_id, stream_type: 'vod' };
+            const streamId = item.stream_id;
+
+            // --- FAV BUTTON LOGIC ---
+            const modalFavButton = $('#modal-fav-button');
+            const updateModalFavIcon = () => {
+                modalFavButton.innerHTML = getHeartIcon(isFavorite(streamId));
+            };
+            modalFavButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleFavorite(streamId, 'vod', fullVodItem);
+                updateModalFavIcon();
+            };
+            updateModalFavIcon();
+            
+            // --- NEW WATCH LATER LOGIC ---
+            const modalWatchLaterButton = $('#modal-watch-later-button');
+            const updateModalWatchLaterIcon = () => {
+                modalWatchLaterButton.innerHTML = getWatchLaterIcon(isToWatch(streamId));
+            };
+            modalWatchLaterButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleWatchLater(streamId, 'vod', fullVodItem);
+                updateModalWatchLaterIcon();
+            };
+            updateModalWatchLaterIcon();
+            // --- END NEW LOGIC ---
+
+            // Set up button actions
+            $('#modal-play-button').onclick = () => {
+                hideMovieDetailsModal();
+                playMovie(item, startTime, info); // Pass info to player
+            };
+            $('#modal-close-button').onclick = hideMovieDetailsModal;
+            
+            // Show modal and focus
+            $('#movie-details-modal').style.display = 'flex';
+            $('#modal-play-button').focus();
+        }
+
+        /**
+         * NEW: Hides the movie details modal
+         */
+        function hideMovieDetailsModal() {
+            $('#movie-details-modal').style.display = 'none';
+            if (lastFocusedElement) {
+                lastFocusedElement.focus(); // Restore focus
+            }
+        }
+
+        /**
+         * NEW: This function *only* starts playback.
+         * It can be called from the modal (with info) or from handleMovieClick (without info).
+         */
+        function playMovie(item, startTime, info = null) {
+            currentItem = item;
+            currentEpisode = null;
+            showPage('page-player');
+            pushToNavStack('page-player');
+            
+            let ext, streamUrl, details, subtitles = null;
+
+            if (!info || !info.movie_data) {
+                // This branch is for when info *failed* and we're playing directly.
+                console.warn("Playing without full info, guessing extension.");
+                ext = 'mp4'; // Guess
+                streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+                details = { name: item.name, rating: item.rating };
+            } else {
+                // This branch is when info *succeeded* and we're playing from the modal.
+                ext = info.movie_data.container_extension || 'mp4';
+                streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+                details = {
+                    name: info.info.name || item.name,
+                    rating: info.info.rating_5based || item.rating
+                };
+                subtitles = info.movie_data.subtitles || null; // Get subtitles
+            }
+            
+            if (isTizen) startTizenPlayer(streamUrl, details, startTime, 'vod', subtitles);
+            else startWebPlayer(streamUrl, details, startTime, 'vod', subtitles);
+        }
+
+        async function playLive(item) {
+            currentItem = item;
+            currentEpisode = null;
+            showPage('page-player');
+            pushToNavStack('page-player');
+            
+            const streamUrl = `${userSettings.xtreamConfig.host}/live/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.ts`;
+            const details = { name: item.name, rating: null };
+
+            if (isTizen) startTizenPlayer(streamUrl, details, 0, 'live');
+            else startWebPlayer(streamUrl, details, 0, 'live');
+        }
+
+        function startWebPlayer(url, details, startTime, type, subtitles = null) {
+            console.log(`Starting Web Player: ${url} at ${startTime}s`);
             const player = $('#web-video-player');
-            player.style.display = 'block';
+            
+            // Clear old subtitle tracks
+            const oldTracks = player.querySelectorAll('track');
+            oldTracks.forEach(t => t.remove());
+
+            // Add new subtitle tracks if available
+            if (type === 'vod' && subtitles && Array.isArray(subtitles)) {
+                console.log(`Found ${subtitles.length} subtitle tracks.`);
+                subtitles.forEach((sub, index) => {
+                    if (!sub.url) return; // Skip if no URL
+                    const track = document.createElement('track');
+                    track.kind = 'subtitles';
+                    track.label = sub.language || `Track ${index + 1}`;
+                    // Try to get a 2-char lang code
+                    let srclang = 'en'; 
+                    if (sub.language) {
+                        srclang = sub.language.slice(0, 2).toLowerCase();
+                    }
+                    if (sub.language_code) {
+                        srclang = sub.language_code;
+                    }
+                    
+                    track.srclang = srclang;
+                    track.src = sub.url;
+                    
+                    if (index === 0) {
+                        track.default = true; // Make first one default
+                    }
+                    player.appendChild(track);
+                });
+            }
+
             player.src = url;
+            player.style.display = 'block';
+            
+            player.ontimeupdate = () => {
+                // Pass currentItem (series) and currentEpisode (episode) if it's a series
+                saveProgress(currentItem, player.currentTime, player.duration, type, currentEpisode);
+            };
             
             player.onloadedmetadata = () => {
-                if (startTime > 0) {
-                    player.currentTime = startTime / 1000; // convert to seconds
-                }
+                if (startTime > 0) player.currentTime = startTime;
                 player.play();
             };
             
-            player.ontimeupdate = saveCurrentProgress; // Save progress on update
+            player.play();
             
-            player.onended = () => {
-                console.log("Web player finished.");
-                stopPlayer();
-                goBack(); // Go back to previous screen
-            };
-            
-            player.onerror = (e) => {
-                console.error("Web player error:", e);
-                showError("Video playback failed.");
-                stopPlayer();
-                goBack();
-            };
+            // Start periodic saving
+            clearInterval(saveProgressInterval); // Clear any old ones
+            saveProgressInterval = setInterval(saveUserSettings, 15000); // Save every 15s
         }
-        
-        /**
-         * Plays a stream using the Tizen AVPlay API.
-         * @param {string} url - The URL of the stream.
-         * @param {number} startTime - The time to seek to (in ms).
-         */
-        function playTizen(url, startTime) {
-            console.log(`Playing with Tizen Player (start: ${startTime}ms)`);
+
+        function startTizenPlayer(url, details, startTime, type, subtitles = null) {
+            console.log(`Starting Tizen Player: ${url} at ${startTime}s`);
+            
+            const container = $('#tizen-player-container');
+            container.style.display = 'block';
+            container.innerHTML = '<object type="application/avplayer" id="av-player" style="width:100%; height:100%;"></object>';
+            tizenAvPlayer = $('#av-player');
+
+            // Show overlay
+            $('#tizen-movie-name').textContent = details.name;
+            $('#tizen-movie-rating').style.display = details.rating ? 'block' : 'none';
+            if(details.rating) $('#tizen-movie-rating').textContent = `Rating: ${Number(details.rating).toFixed(1)}`;
+            const overlay = $('#tizen-player-overlay');
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.style.opacity = '1', 50); // Fade in
+            clearTimeout(tizenOverlayTimer);
+            tizenOverlayTimer = setTimeout(() => overlay.style.opacity = '0', 5000); // Fade out after 5s
+
             try {
-                tizenAvPlayer = webapis.avplay;
-                
-                const playerRect = {
-                    x: 0,
-                    y: 0,
-                    w: window.innerWidth,
-                    h: window.innerHeight
-                };
-                
-                const listener = {
+                const playerListener = {
                     onbufferingstart: () => console.log("AVPlay: Buffering start..."),
-                    onbufferingprogress: (percent) => console.log(`AVPlay: Buffering... ${percent}%`),
-                    onbufferingcomplete: () => {
-                        console.log("AVPlay: Buffering complete.");
-                        tizenAvPlayer.play();
-                        if (startTime > 0) {
-                            console.log(`AVPlay: Seeking to ${startTime}ms`);
-                            tizenAvPlayer.seekTo(startTime);
-                        }
-                    },
+                    onbufferingcomplete: () => console.log("AVPlay: Buffering complete."),
                     onstreamcompleted: () => {
                         console.log("AVPlay: Stream completed.");
-                        stopPlayer();
+                        // Mark as fully watched by setting progress to duration
+                        const duration = webapis.avplay.getDuration();
+                        saveProgress(currentItem, duration / 1000, duration / 1000, type, currentEpisode);
+                        goBack();
+                    },
+                    onerror: (err) => {
+                        console.error("AVPlay Error:", err);
+                        showError("Tizen Player Error. Unsupported format?");
                         goBack();
                     },
                     oncurrentplaytime: (time) => {
-                        // We use a separate interval for saving, but this is good for debug
-                        // console.log(`AVPlay: Playback time: ${time}ms`);
-                    },
-                    onerror: (e) => {
-                        console.error("AVPlay Error:", e);
-                        showError(`Playback Error: ${e}`);
-                        stopPlayer();
-                        goBack();
-                    },
-                    onevent: (type, data) => {
-                        console.log(`AVPlay Event: ${type}`, data);
+                        const duration = webapis.avplay.getDuration();
+                        saveProgress(currentItem, time / 1000, duration / 1000, type, currentEpisode);
                     }
                 };
+                
+                webapis.avplay.setListener(playerListener);
+                webapis.avplay.open(url);
+                
+                // Set external subtitle for Tizen
+                if (type === 'vod' && subtitles && subtitles.length > 0) {
+                    // Tizen only seems to support one external path. Use the first one.
+                    const subUrl = subtitles[0].url;
+                    if (subUrl) {
+                        console.log("Setting Tizen external subtitle:", subUrl);
+                        webapis.avplay.setExternalSubtitlePath(subUrl);
+                    }
+                }
 
-                tizenAvPlayer.open(url);
-                tizenAvPlayer.setListener(listener);
-                tizenAvPlayer.setDisplayRect(playerRect.x, playerRect.y, playerRect.w, playerRect.h);
+                webapis.avplay.setDisplayRect(0, 0, 1920, 1080); // Full HD
                 
-                // Show the black overlay to capture keys
-                $('#tizen-player-overlay').style.display = 'block';
-                
-                // TODO: Add DRM logic here if needed
-                // tizenAvPlayer.setDrm(...)
-                
-                tizenAvPlayer.prepareAsync(() => {
-                    console.log("AVPlay: Prepare successful.");
+                webapis.avplay.prepareAsync(() => {
+                    console.log("AVPlay: Prepared. Playing...");
+
+                    // Try to enable the subtitle track (1-based index, 0 is 'off')
+                    if (type === 'vod' && subtitles && subtitles.length > 0) {
+                        try { 
+                            webapis.avplay.setVideoProperty('SUBTITLE', 1); 
+                            console.log("Enabled subtitle track 1");
+                        } catch (e) { 
+                            console.warn("Could not set subtitle track", e); 
+                        }
+                    }
+
+                    if (startTime > 0) {
+                        webapis.avplay.seekTo(startTime * 1000, 
+                            () => webapis.avplay.play(),
+                            (e) => { console.error("Seek failed", e); webapis.avplay.play(); } // Play anyway
+                        );
+                    } else {
+                        webapis.avplay.play();
+                    }
+                    // Start periodic saving
+                    clearInterval(saveProgressInterval); // Clear any old ones
+                    saveProgressInterval = setInterval(saveUserSettings, 15000); // Save every 15s
+                    
                 }, (e) => {
-                    console.error("AVPlay: Prepare failed.", e);
-                    showError("Failed to prepare video.");
+                    console.error("AVPlay: Prepare Error", e);
+                    showError("Tizen: Could not prepare video.");
+                    goBack();
                 });
-                
+
             } catch (e) {
                 console.error("Tizen AVPlay critical error:", e);
                 showError("Tizen AVPlay API failed.");
@@ -1294,25 +2501,19 @@
             }
         }
 
-        /**
-         * Stops the currently active player (Tizen or Web)
-         */
         function stopPlayer() {
             clearInterval(saveProgressInterval); // Stop periodic saving
-            saveCurrentProgress(); // Do one final save
-            saveUserSettings(); // Persist to storage
-            
+            saveUserSettings(); // Do one final save
             currentItem = null;
             currentEpisode = null;
             
             if (isTizen && tizenAvPlayer) {
                 try {
                     console.log("Stopping Tizen Player");
-                    if (tizenAvPlayer.getState() !== 'IDLE') {
-                        tizenAvPlayer.stop();
-                    }
-                    tizenAvPlayer.close();
+                    webapis.avplay.stop();
+                    webapis.avplay.close();
                     tizenAvPlayer = null;
+                    $('#tizen-player-container').innerHTML = '';
                     $('#tizen-player-overlay').style.display = 'none';
                 } catch (e) {
                     console.error("Error stopping Tizen player:", e);
@@ -1330,118 +2531,6 @@
                 oldTracks.forEach(t => t.remove());
             }
         }
-
-
-        // --- 7. Utility & Helper Functions ----------------------------------
-        
-        /**
-         * Returns to the previous logical page (e.g., from Player to Details/Grid).
-         */
-        function goBack() {
-            // This function is called after video stops.
-            // We don't want to change pages, just ensure player is hidden.
-            // The 'Back' key handler is responsible for page changes.
-            console.log("goBack() called, player should be hidden.");
-        }
-
-        /**
-         * Shows or hides the global loading spinner.
-         * @param {boolean} show - True to show, false to hide.
-         * @param {string} [text] - Optional text to display.
-         */
-        function showLoading(show, text = "") {
-            const spinner = $('#loading-spinner');
-            const status = $('#loading-status');
-            
-            if (show) {
-                if (status && currentPage === 'LOADING') {
-                    status.textContent = text || "Loading...";
-                }
-                if (spinner) spinner.style.display = 'flex';
-            } else {
-                if (spinner) spinner.style.display = 'none';
-            }
-        }
-        
-        let errorTimer = null;
-        /**
-         * Shows a temporary error message at the bottom of the screen.
-         * @param {string} message - The error message to display.
-         */
-        function showError(message) {
-            const errorEl = $('#error-message');
-            if (!errorEl) return;
-            
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-            
-            // Force reflow to enable transition
-            void errorEl.offsetWidth; 
-            errorEl.style.opacity = '1';
-
-            // Clear existing timer
-            if (errorTimer) {
-                clearTimeout(errorTimer);
-            }
-            
-            // Hide after 3 seconds
-            errorTimer = setTimeout(() => {
-                errorEl.style.opacity = '0';
-                setTimeout(() => {
-                    errorEl.style.display = 'none';
-                }, 300); // Wait for fade out
-            }, 3000);
-        }
-
-        /**
-         * Loads user settings from Tizen storage or localStorage.
-         */
-        function loadUserSettings() {
-            try {
-                const storedSettings = localStorage.getItem('tizenIptvSettings');
-                if (storedSettings) {
-                    userSettings = JSON.parse(storedSettings);
-                    console.log("User settings loaded:", userSettings);
-                } else {
-                    console.log("No user settings found, using defaults.");
-                }
-            } catch (e) {
-                console.error("Failed to load user settings:", e);
-            }
-        }
-        
-        /**
-         * Saves user settings to Tizen storage or localStorage.
-         */
-        function saveUserSettings() {
-            try {
-                localStorage.setItem('tizenIptvSettings', JSON.stringify(userSettings));
-                // console.log("User settings saved.");
-            } catch (e) {
-                console.error("Failed to save user settings:", e);
-            }
-        }
-
-        /**
-         * Registers Tizen-specific keys for the application.
-         */
-        function registerTizenKeys() {
-            if (!isTizen) return;
-            
-            try {
-                TIZEN_KEYS.forEach(key => {
-                    webapis.inputdevice.registerKey(key);
-                    console.log(`Registered key: ${key}`);
-                });
-            } catch (e) {
-                console.error("Error registering Tizen keys:", e);
-            }
-        }
-
-        // --- 8. App Initialization ------------------------------------------
-
-        // Start the application when the window is loaded
-        window.onload = onAppLoad;
 
     </script>
 </body>
