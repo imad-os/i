@@ -1,16 +1,26 @@
 {
     "favorites": [],
-    "toWatch": [],
-    "watched": {},
+    "watching": {},
     "theme": "theme-default",
+    "gpu_memory_enhancer":false,
     "xtreamConfig1": {
+        "title":"local",
         "host": "http://192.168.2.72:8080",
         "username": "u",
         "password": "p"        
     },
-    "xtreamConfig": {
-        "host": "http://14605-bass.ott-cdn.me",
-        "username": "d9c87b2270",
-        "password": "670a8c550c12"
-    }
+    "xtreamConfig": [
+        {
+            "title":"iptv",
+            "host": "http://14605-bass.ott-cdn.me",
+            "username": "d9c87b2270",
+            "password": "670a8c550c12"
+        },
+        {
+            "title":"local",
+            "host": "http://192.168.2.72:8080",
+            "username": "u",
+            "password": "p"        
+        }
+    ]
 }
