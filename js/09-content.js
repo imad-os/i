@@ -2,12 +2,24 @@
 
 async function loadCategories(type) {
     let action = '', title = '';
+    
+    // Show Search Button on Category Pages
+    $('#header-search-button').style.display = 'block';
+    $('#header-search-button').onclick = () => toggleSearchBar(true);
+    
+    // --- LIVE TV BRANCH ---
     if (type === 'live') {
-        action = 'get_live_categories'; title = 'Live TV Categories';
-    } else if (type === 'vod') {
+        initLiveTVInterface(); // Use specific Live TV logic
+        return;
+    }
+
+    // --- VOD & SERIES BRANCH ---
+    if (type === 'vod') {
         action = 'get_vod_categories'; title = 'Movie Categories';
+        currnetCategory = "movies";
     } else if (type === 'series') {
         action = 'get_series_categories'; title = 'Series Categories';
+        currnetCategory = "series";
     }
 
     const categories = await fetchXtream({ action });
@@ -16,42 +28,48 @@ async function loadCategories(type) {
         const grid = $('#category-grid');
         grid.innerHTML = ''; // Clear old
         
-        // --- ADD CUSTOM CATEGORIES ---
+        // Hide search button on categories list (only needed on content list)
+        $('#header-search-button').style.display = 'none';
+
+        // --- FILTER & SORT CATEGORIES ---
+        // 1. Filter hidden
+        let visibleCategories = categories.filter(cat => 
+            !userSettings.hiddenCategories.includes(String(cat.category_id))
+        );
+
+        // 2. Sort pinned to top
+        visibleCategories.sort((a, b) => {
+            const isPinnedA = userSettings.pinnedCategories.includes(String(a.category_id));
+            const isPinnedB = userSettings.pinnedCategories.includes(String(b.category_id));
+            if (isPinnedA && !isPinnedB) return -1;
+            if (!isPinnedA && isPinnedB) return 1;
+            return 0;
+        });
+
+
+        // --- ADD CUSTOM CARDS ---
         
         // 1. Favorites (NOW FOR ALL TYPES)
         if (userSettings.favorites.length > 0) {
-            // Get all favorite items from the 'watched' cache
-            const favItems = userSettings.favorites
-                .map(id => {
-                    const watchedItem = Object.values(userSettings.watched).find(w => 
-                        (w.item.stream_id == id || w.item.series_id == id)
-                    );
-                    return watchedItem ? watchedItem : null; // Return the whole entry (item + type)
-                })
-                .filter(entry => {
-                    if (!entry || !entry.item) return false;
-                    if (type === 'live') return entry.type === 'live';
-                    if (type === 'vod') return entry.type === 'vod';
-                    if (type === 'series') return entry.type === 'series';
-                    return false;
-                });
-                
-            if (favItems.length > 0) {
+             const hasFavorites = userSettings.favorites.some(id => {
+                 const w = Object.values(userSettings.watching).find(w => (w.item.stream_id == id || w.item.series_id == id));
+                 return w && w.type === type;
+             });
+             if (hasFavorites) {
                  grid.appendChild(createCategoryCard('Favorites', 'favorites', type, { special: 'favorites' }));
-            }
+             }
         }
         
         // 2. Continue Watching / To Watch (VOD/Series only)
         if (type === 'vod' || type === 'series') {
-            // "Continue Watching"
-            const watchedItems = Object.values(userSettings.watched).filter(w => w.type === type && w.progress_sec > 0);
-            if (watchedItems.length > 0) {
-                grid.appendChild(createCategoryCard('Continue Watching', 'watched', type, { special: 'watched' }));
+            const watchingItems = Object.values(userSettings.watching).filter(w => w.type === type && w.progress_sec > 0);
+            if (watchingItems.length > 0) {
+                grid.appendChild(createCategoryCard('Continue Watching', 'watching', type, { special: 'watching' }));
             }
         }
         
-        // 4. API Categories
-        categories.forEach(cat => {
+        // 3. API Categories
+        visibleCategories.forEach(cat => {
             grid.appendChild(createCategoryCard(cat.category_name, cat.category_id, type));
         });
         
@@ -65,9 +83,290 @@ function createCategoryCard(name, id, type, context = {}) {
     card.className = 'nav-item p-6 rounded-lg bg-card text-center cursor-pointer transition-all hover:bg-opacity-80';
     card.innerHTML = `<h3 class="text-lg font-bold text-main">${name}</h3>`;
     card.onclick = () => loadContent(type, id, name, context);
-    card.setAttribute('tabindex', '0'); // <-- MAKE DIV FOCUSABLE
+    card.setAttribute('tabindex', '0'); 
     return card;
 }
+
+// =====================================================
+// === FILTER & SEARCH LOGIC (NEW) ===
+// =====================================================
+
+function filterContent(query) {
+    const q = query.toLowerCase().trim();
+    let filtered = [];
+    
+    // 1. Filter Data
+    if (!q) {
+        filtered = searchState.originalItems;
+    } else {
+        filtered = searchState.originalItems.filter(item => 
+            (item.name || '').toLowerCase().includes(q)
+        );
+    }
+    
+    // 2. Determine Context and Re-render
+    const activePage = $$('.page[style*="block"]')[0];
+    
+    if (activePage && activePage.id === 'page-live-tv') {
+        // Live TV: Re-render channel list DOM only
+        renderLiveChannelsDOM(filtered);
+        
+    } else if (activePage && activePage.id === 'page-content') {
+        // VOD/Series: Check Virtualization
+        const grid = $('#content-grid');
+        
+        // Stop any existing tasks
+        stopVirtualFlushInterval();
+        
+        if (virtualList) {
+            // -- Virtual Path --
+            // Update global data source
+            virtualListItems = filtered;
+            
+            // If filtered list is small, we could switch to DOM, but simpler to just reset virtual list
+            // Reset Map for click lookups
+            virtualListMap.clear();
+            virtualListItems.forEach(it => {
+                const key = it.stream_id || it.series_id;
+                if (key) virtualListMap.set(String(key), it);
+            });
+            
+            // Destroy old list
+            cleanupVirtualisation();
+            
+            // Reset Grid style
+            grid.className = '';
+            grid.style.height = '100%';
+            
+            // Create new list with filtered items
+            virtualList = createVirtualList({
+                container: grid,
+                itemCount: virtualListItems.length,
+                renderItem: renderVirtualItem,
+            });
+            
+            focusedVirtualIndex = 0;
+            virtualList.highlight(0);
+            
+            // Restart flush if needed
+            if (userSettings && userSettings.gpu_memory_enhancer) {
+                startVirtualFlushInterval();
+            }
+            
+        } else {
+            // -- Non-Virtual Path --
+            grid.innerHTML = '';
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p class="text-alt col-span-full">No matches found.</p>`;
+                return;
+            }
+            
+            const fragment = document.createDocumentFragment();
+            filtered.forEach(item => {
+                // Note: We reuse 'virtualListType' which holds 'vod' or 'series' from loadContent
+                const card = createContentCard(item, virtualListType, virtualListContext);
+                fragment.appendChild(card);
+            });
+            grid.appendChild(fragment);
+            
+            // Focus first
+            const first = grid.querySelector('.nav-item');
+            if(first) first.focus();
+        }
+    }
+}
+
+
+// =====================================================
+// === LIVE TV INTERFACE LOGIC (3-Column View) ===
+// =====================================================
+
+async function initLiveTVInterface() {
+    $('#global-header-title').textContent = 'Live TV';
+    
+    // Enable search for Live TV
+    $('#header-search-button').style.display = 'block';
+    $('#header-search-button').onclick = () => toggleSearchBar(true);
+
+    showPage('page-live-tv');
+    pushToNavStack('page-live-tv'); // Push Live TV page to stack
+    
+    const categoryList = $('#live-categories-list');
+    categoryList.innerHTML = '<div class="loader mx-auto mt-4"></div>';
+    $('#live-channels-list').innerHTML = ''; // Clear channels
+    
+    try {
+        // 1. Fetch Categories
+        const categories = await fetchXtream({ action: 'get_live_categories' });
+        categoryList.innerHTML = ''; // Clear loader
+        
+        if (categories && Array.isArray(categories)) {
+            // Filter & Sort
+            let visibleCategories = categories.filter(cat => !userSettings.hiddenCategories.includes(String(cat.category_id)));
+            visibleCategories.sort((a, b) => {
+                const isPinnedA = userSettings.pinnedCategories.includes(String(a.category_id));
+                const isPinnedB = userSettings.pinnedCategories.includes(String(b.category_id));
+                return (isPinnedA === isPinnedB) ? 0 : isPinnedA ? -1 : 1;
+            });
+
+            if (userSettings.favorites.length > 0) {
+                 const favBtn = createLiveCategoryItem('Favorites', 'favorites');
+                 categoryList.appendChild(favBtn);
+            }
+
+            visibleCategories.forEach(cat => {
+                const btn = createLiveCategoryItem(cat.category_name, cat.category_id);
+                categoryList.appendChild(btn);
+            });
+            
+            // Focus first category
+            const first = categoryList.querySelector('.nav-item');
+            if(first) first.focus();
+        }
+    } catch (e) {
+        console.error("Error loading Live TV categories:", e);
+        categoryList.innerHTML = '<p class="text-red-500 p-2">Error loading categories</p>';
+    }
+}
+
+function createLiveCategoryItem(name, id) {
+    const btn = document.createElement('button');
+    btn.className = 'nav-item w-full text-left p-3 rounded bg-card text-main hover:bg-opacity-80 mb-1 text-sm font-semibold truncate';
+    btn.textContent = name;
+    btn.onclick = () => loadLiveChannels(id, name);
+    btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'Enter') {
+             loadLiveChannels(id, name);
+        }
+    });
+    return btn;
+}
+
+async function loadLiveChannels(categoryId, categoryName) {
+    const channelList = $('#live-channels-list');
+    $('#live-channels-title').textContent = categoryName;
+    channelList.innerHTML = '<div class="loader mx-auto mt-4"></div>';
+    
+    try {
+        let streams = [];
+        if (categoryId === 'favorites') {
+             streams = userSettings.favorites
+                .map(id => {
+                    const w = Object.values(userSettings.watching).find(w => w.item.stream_id == id);
+                    return w ? w.item : null;
+                })
+                .filter(item => item && item.stream_type === 'live');
+        } else {
+            streams = await fetchXtream({ action: 'get_live_streams', category_id: categoryId });
+        }
+        
+        // --- SEARCH BACKUP ---
+        searchState.originalItems = streams || [];
+        
+        // Render
+        renderLiveChannelsDOM(streams);
+
+    } catch (e) {
+        console.error("Error loading channels:", e);
+        channelList.innerHTML = '<p class="text-red-500 p-2">Error loading channels</p>';
+    }
+}
+
+/**
+ * Helper to render the channel list buttons. Separated for Search Filtering.
+ */
+function renderLiveChannelsDOM(streams) {
+    const channelList = $('#live-channels-list');
+    channelList.innerHTML = '';
+
+    if (!streams || !Array.isArray(streams) || streams.length === 0) {
+        channelList.innerHTML = '<p class="text-alt p-2">No channels found.</p>';
+        return;
+    }
+
+    streams.forEach(stream => {
+        const btn = document.createElement('button');
+        btn.className = 'nav-item w-full flex items-center gap-3 p-2 rounded bg-card text-main hover:bg-opacity-80 mb-1 text-sm text-left';
+        
+        const iconSrc = stream.stream_icon || 'img/tv-icon.png'; 
+        
+        btn.innerHTML = `
+            <img src="${iconSrc}" class="w-8 h-8 object-contain bg-black rounded" onerror="this.style.display='none'">
+            <span class="truncate flex-1">${stream.name}</span>
+        `;
+        
+        // Store item data
+        btn.dataset.item = JSON.stringify(stream);
+        
+        // Click Handling
+        btn.onclick = () => handleLiveChannelClick(stream, btn);
+        
+        // Navigation Handling
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                // Go back to Category List
+                const currentCat = $('#live-categories-list .nav-item:focus') || $('#live-categories-list .nav-item');
+                if (currentCat) currentCat.focus();
+                e.stopPropagation(); 
+            }
+        });
+        
+        channelList.appendChild(btn);
+    });
+    
+    // Move focus to first channel if focus isn't already inside (checked during search)
+    if (!channelList.contains(document.activeElement)) {
+        const first = channelList.querySelector('.nav-item');
+        if(first) first.focus();
+    }
+}
+
+let currentPreviewStreamId = null;
+
+function handleLiveChannelClick(stream, btnElement) {
+    if (currentPreviewStreamId === stream.stream_id) {
+        console.log("Going Fullscreen for:", stream.name);
+        playLive(stream); // Standard play function (will go fullscreen)
+        return;
+    }
+
+    currentPreviewStreamId = stream.stream_id;
+    
+    // Highlight active channel in list
+    $$('#live-channels-list .nav-item').forEach(b => b.classList.remove('bg-primary', 'text-white'));
+    btnElement.classList.remove('bg-card');
+    btnElement.classList.add('bg-primary', 'text-white');
+
+    // Update Info Area
+    $('#live-channel-name').textContent = stream.name;
+    
+    if (isTizen && typeof webapis !== 'undefined' && webapis.avplay) {
+         try {
+             try { webapis.avplay.stop(); } catch(e){}
+             const url = `${xtreamConfig.host}/live/${xtreamConfig.username}/${xtreamConfig.password}/${stream.stream_id}.ts`;
+             webapis.avplay.open(url);
+             const container = $('#live-preview-container');
+             const rect = container.getBoundingClientRect();
+             webapis.avplay.setDisplayRect(Math.round(rect.left), Math.round(rect.top), Math.round(rect.width), Math.round(rect.height));
+             webapis.avplay.prepareAsync(() => webapis.avplay.play());
+         } catch(e) {
+             console.error("Tizen preview error:", e);
+         }
+    } else {
+        const container = $('#live-preview-container');
+        container.innerHTML = ''; 
+        const video = document.createElement('video');
+        video.className = 'w-full h-full object-cover';
+        video.controls = false;
+        video.autoplay = true;
+        video.src = `${xtreamConfig.host}/live/${xtreamConfig.username}/${xtreamConfig.password}/${stream.stream_id}.ts`;
+        container.appendChild(video);
+    }
+}
+
+// =====================================================
+// === END LIVE TV LOGIC ===
+// =====================================================
 
 
 /**
@@ -75,33 +374,8 @@ function createCategoryCard(name, id, type, context = {}) {
  * This is used by the *NON-VIRTUAL* list.
  */
 function createContentCard(item, type, context = {}) {
-    // --- Data processing ---
-    const poster = item.movie_image || item.icon || item.stream_icon || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
-
-    // === GPU-SAFE POSTER MODE (optional) ===
-    if (window.virtualListOptions?.gpu_memory_enhancer === true) {
-        // Disable <img> to avoid decoded image memory / GPU textures
-        dom.__v.img.style.display = 'none';
-        // Only update background if changed
-        const targetBG = `url("${poster}")`;
-        if (dom.style.backgroundImage !== targetBG) {
-            dom.style.backgroundImage = targetBG;
-            dom.style.backgroundSize = 'cover';
-            dom.style.backgroundPosition = 'center';
-        }
-    } else {
-        // Normal mode: use <img> with reuse and lazy loading
-        if (dom.__v.img.src !== poster) dom.__v.img.src = poster;
-        dom.__v.img.alt = item.name || '';
-        dom.__v.img.style.display = '';
-        dom.style.backgroundImage = 'none';
-    }
-    // === END GPU-SAFE POSTER MODE === || item.icon || item.stream_icon || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
-    const name = item.name;
-    const rating = item.rating_5based || item.rating || 0;
+    console.log("createContentCard")
     const stream_id = item.stream_id || item.series_id;
-    
-    const progressInfo = getWatchedProgress(stream_id);
     
     // --- Create Card Element ---
     const card = document.createElement('div');
@@ -120,8 +394,8 @@ function createContentCard(item, type, context = {}) {
     // Attach listeners
     card.onclick = () => {
         // Must read fresh progress info on click
-        const currentProgressInfo = getWatchedProgress(stream_id);
-        const startTime = (context.special === 'watched' && currentProgressInfo) ? currentProgressInfo.progress_sec : 0;
+        const currentProgressInfo = getwatchingProgress(stream_id);
+        const startTime = (context.special === 'watching' && currentProgressInfo) ? currentProgressInfo.progress_sec : 0;
         
         const currentItem = JSON.parse(card.dataset.item);
         
@@ -130,7 +404,7 @@ function createContentCard(item, type, context = {}) {
         } else if (type === 'live') {
             playLive(currentItem);
         } else if (type === 'series') {
-            if (context.special === 'watched' && currentProgressInfo && currentProgressInfo.episode) {
+            if (context.special === 'watching' && currentProgressInfo && currentProgressInfo.episode) {
                 playEpisode(currentProgressInfo.episode, currentItem, startTime);
             } else {
                 loadSeriesInfo(currentItem);
@@ -157,7 +431,7 @@ function createContentCard(item, type, context = {}) {
 let __virtualFlushInterval = null;
 function flushHiddenVirtualNodes() {
     try {
-        if (!window.virtualListOptions || !window.virtualListOptions.gpu_memory_enhancer) return;
+        if (!userSettings || !userSettings.gpu_memory_enhancer) return;
         const grid = $('#content-grid');
         if (!grid) return;
         const nodes = grid.querySelectorAll('.virtual-card');
@@ -194,10 +468,10 @@ function stopVirtualFlushInterval() {
 function getCardInnerHTML(item, type, context = {}) {
     const poster = item.movie_image || item.icon || item.stream_icon || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
     const name = item.name;
-    const rating = item.rating_5based || item.rating || 0;
+    const rating = calcRating(item);
     const stream_id = item.stream_id || item.series_id;
     
-    const progressInfo = getWatchedProgress(stream_id);
+    const progressInfo = getwatchingProgress(stream_id);
     const progressPercent = (progressInfo && progressInfo.duration_sec > 0) ? (progressInfo.progress_sec / progressInfo.duration_sec) * 100 : 0;
     
     let episodeTagHTML = '';
@@ -220,7 +494,7 @@ function getCardInnerHTML(item, type, context = {}) {
         <div class="card-progress-bar-inner progress-bar-inner" style="width: ${progressPercent}%;"></div>
     </div>` : '';
     
-    const nameHTML = `<h4 class="card-name font-semibold text-main truncate">${name}</h4>`;
+    const nameHTML = `<h4 class="card-name font-semibold text-main truncate m-2">${name}</h4>`;
     
     // Main structure from createContentCard
     return `
@@ -229,7 +503,7 @@ function getCardInnerHTML(item, type, context = {}) {
         ${episodeTagHTML}
         ${ratingBoxHTML}
         ${favButtonHTML}
-        <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent">
             ${progressBarHTML}
             ${nameHTML}
         </div>
@@ -241,7 +515,9 @@ function getCardInnerHTML(item, type, context = {}) {
  * Reuses DOM elements instead of setting innerHTML every time.
  */
 function renderVirtualItem(index, dom) {
+    console.log("renderVirtualItem")
     const item = virtualListItems[index];
+    if(!dom) return;
     // If there is no item for this index, release resources on the node so memory can be reclaimed
     if (!item) {
         // If we previously created DOM structure, clear the image src to free memory
@@ -340,7 +616,7 @@ function renderVirtualItem(index, dom) {
 
     // Episode tag (series)
     if (type === 'series') {
-        const progressInfo = getWatchedProgress(stream_id);
+        const progressInfo = getwatchingProgress(stream_id);
         if (progressInfo && progressInfo.episode) {
             const s = String(progressInfo.episode.season).padStart(2, '0');
             const e = String(progressInfo.episode.episode_num).padStart(2, '0');
@@ -354,7 +630,7 @@ function renderVirtualItem(index, dom) {
     }
 
     // Rating
-    const rating = item.rating_5based || item.rating || 0;
+    const rating = calcRating(item);
     if (rating && Number(rating) > 0) {
         dom.__v.ratingText.textContent = Number(rating).toFixed(1);
         dom.__v.ratingBox.style.display = '';
@@ -366,7 +642,7 @@ function renderVirtualItem(index, dom) {
     dom.__v.favButton.innerHTML = getHeartIcon(isFavorite(stream_id));
 
     // Progress bar
-    const progressInfo = getWatchedProgress(stream_id);
+    const progressInfo = getwatchingProgress(stream_id);
     const progressPercent = (progressInfo && progressInfo.duration_sec > 0) ? (progressInfo.progress_sec / progressInfo.duration_sec) * 100 : 0;
     dom.__v.progressInner.style.width = `${progressPercent}%`;
 
@@ -392,15 +668,16 @@ function onVirtualCardClick(dom) {
     if (!currentItem) return;
 
     const context = virtualListContext;
-    const currentProgressInfo = getWatchedProgress(streamId);
-    const startTime = (context.special === 'watched' && currentProgressInfo) ? currentProgressInfo.progress_sec : 0;
+    const currentProgressInfo = getwatchingProgress(streamId);
+    const startTime = (context.special === 'watching' && currentProgressInfo) ? currentProgressInfo.progress_sec : 0;
 
     if (type === 'vod') {
+        console.log("onVirtualCardClick", currentItem)
         handleMovieClick(currentItem, startTime);
     } else if (type === 'live') {
         playLive(currentItem);
     } else if (type === 'series') {
-        if (context.special === 'watched' && currentProgressInfo && currentProgressInfo.episode) {
+        if (context.special === 'watching' && currentProgressInfo && currentProgressInfo.episode) {
             playEpisode(currentProgressInfo.episode, currentItem, startTime);
         } else {
             loadSeriesInfo(currentItem);
@@ -436,18 +713,25 @@ function onVirtualFavClick(e, dom) {
 async function loadContent(type, categoryId, categoryName = 'Content', context = {}) {
     let items = [];
     let title = categoryName;
+    
+    // Enable Search Button
+    $('#header-search-button').style.display = 'block';
+    $('#header-search-button').onclick = () => toggleSearchBar(true);
 
-    if (context.special === 'watched') {
-        items = Object.values(userSettings.watched)
+    if (typeof DetailsView !== 'undefined') {
+        DetailsView.enable(false);
+    }
+    if (context.special === 'watching') {
+        items = Object.values(userSettings.watching)
             .filter(w => w.type === type && w.progress_sec > 0)
             .map(w => w.item);
     } else if (context.special === 'favorites') {
          items = userSettings.favorites
             .map(id => {
-                 const watchedItem = Object.values(userSettings.watched).find(w => 
+                 const watchingItem = Object.values(userSettings.watching).find(w => 
                     (w.item.stream_id == id || w.item.series_id == id)
                 );
-                return watchedItem ? watchedItem : null;
+                return watchingItem ? watchingItem : null;
             })
             .filter(entry => { // Filter by type
                 if (!entry || !entry.item) return false;
@@ -471,6 +755,9 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
     if (items && Array.isArray(items)) {
         $('#global-header-title').textContent = `${title} (${items.length})`;
         
+        // --- SEARCH BACKUP ---
+        searchState.originalItems = items;
+
         // Clean up previous list *before* clearing grid
         if (virtualList) {
             cleanupVirtualisation();
@@ -493,7 +780,9 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
         // --- VIRTUALIZATION DECISION ---
         // Use a threshold to decide
         const threshold = 50; 
-        if ((type === 'vod' || type === 'series') && items.length > threshold) {
+        // FORCE NON-VIRTUAL FOR LIVE TV (As per request, although standard loadContent is usually for grid)
+        // The new Live TV UI uses initLiveTVInterface, so this path is mostly for VOD/Series.
+        if ((type === 'vod' || type === 'series')) {
             // *** VIRTUALIZED PATH ***
             console.log(`Initializing virtual list for ${items.length} items.`);
             
@@ -529,12 +818,15 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
             virtualList.highlight(focusedVirtualIndex);
 
             // 6. Start GPU texture flush interval (if enhancer mode enabled)
-            if (window.virtualListOptions && window.virtualListOptions.gpu_memory_enhancer) {
+            if (userSettings && userSettings.gpu_memory_enhancer) {
                 startVirtualFlushInterval();
             }
 
+            //const content_gride_width = parseInt((state.cols*state.colWidth) + (16 * state.cols));
+            //$('#content-grid div').style.width  =  `${content_gride_width}px`;
+
         } else {
-            // *** NON-VIRTUALIZED PATH (Small list or Live TV) ***
+            // *** NON-VIRTUALIZED PATH (Small list or legacy fallback) ***
             // Ensure any virtual flush interval is stopped
             stopVirtualFlushInterval();
             console.log(`Rendering non-virtualized list for ${items.length} items.`);
@@ -571,7 +863,6 @@ async function loadSeriesInfo(seriesItem) {
         $('#series-plot').textContent = info.info.plot || 'No description available.';
         $('#series-year').textContent = info.info.releaseDate || seriesItem.releaseDate || 'Unknown Year';
 
-        // Create a complete item from the available info to save to favorites/toWatch
         const fullSeriesItem = { ...seriesItem, ...info.info, series_id: seriesItem.series_id, stream_type: 'series' };
         const seriesId = seriesItem.series_id;
 
@@ -653,7 +944,7 @@ function loadSeasonEpisodes(episodes, seriesItem) {
         const epCard = document.createElement('button');
         epCard.className = 'nav-item w-full p-4 rounded-lg bg-card text-left text-main hover:bg-opacity-80 flex justify-between items-center';
         
-        const progress = getWatchedProgress(seriesItem.series_id, episode.id);
+        const progress = getwatchingProgress(seriesItem.series_id, episode.id);
         const progressPercent = (progress && progress.duration_sec > 0) ? (progress.progress_sec / progress.duration_sec) * 100 : 0;
         
         epCard.innerHTML = `

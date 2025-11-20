@@ -221,16 +221,12 @@ const defaul_options = {
                     // set metadata for nav and for renderer
                     unusedNode.dom.dataset.virtualIndex = index;
                     // Render item into DOM node
+                    console.log()
                     try {
                         cfg.renderItem(index, unusedNode.dom);
                     } catch (e) {
-                        // Backwards compatibility: support renderItem(dom, index)
-                        try {
-                            cfg.renderItem(unusedNode.dom, index);
-                        } catch (err) {
-                            console.error('renderItem failed for index', index, err);
-                            unusedNode.dom.innerHTML = '';
-                        }
+                        console.error('renderItem failed for index', index, e);
+                        unusedNode.dom.innerHTML = '';
                     }
                 }
             }

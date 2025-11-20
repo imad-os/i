@@ -24,7 +24,15 @@ function reFocus(pageId){
     console.log(" reFocus : ",pageId)
     const targetPage = $(`#${pageId}`);
     if (targetPage) {
+        /*
+        if(pageId === 'page-content'){
+            targetPage.style.display = 'flex';
+        }else{
+            targetPage.style.display = 'block';
+        }*/
         targetPage.style.display = 'block';
+
+        
         
         // --- VIRTUAL LIST FOCUS ---
         // For virtual list, we don't scroll to top or focus,
@@ -38,20 +46,25 @@ function reFocus(pageId){
         targetPage.scrollTop = 0; // Scroll to top for normal pages
         
         // Focus the first item
-        let firstItem;
-        if (pageId === 'page-content') {
-             // Focus first item in NON-virtual grid
-             firstItem = targetPage.querySelector('#content-grid .nav-item');
-        } else if (pageId === 'page-series-details') {
-            firstItem = targetPage.querySelector('#series-fav-button, #series-watch-later-button, .nav-item, .nav-item-sm');
-        } else {
-             firstItem = targetPage.querySelector('.nav-item, .nav-item-sm');
+        let tiem2focus;
+        if(pageId in focus_history && isVisible( focus_history[pageId] )){
+            tiem2focus = focus_history[pageId];
+        }else{
+            if (pageId === 'page-content') {
+                // Focus first item in NON-virtual grid
+                tiem2focus = targetPage.querySelector('#content-grid .nav-item');
+            } else if (pageId === 'page-series-details') {
+                tiem2focus = targetPage.querySelector('#series-episodes-list .nav-item,#series-episodes-list .nav-item-sm');
+            } else {
+                tiem2focus = targetPage.querySelector('.nav-item, .nav-item-sm');
+            }
         }
+
         
         // REMOVED: Broken focus_regesterer logic
-        if(firstItem){
-            setTimeout(() => firstItem.focus(), 100);
-            console.log(" reFocus : ",pageId, " -> firstitem")
+        if(tiem2focus){
+            setTimeout(() => tiem2focus.focus(), 100);
+            console.log(" reFocus : ",pageId, " -> tiem2focus")
         }
 
     } else {
@@ -68,8 +81,8 @@ function showPage(pageId) {
     globalBackButton.style.display = 'none';
     globalTitle.style.display = 'none';
 
-    if (pageId === 'page-player' && 1==2) { // This (1==2) is strange, but leaving it as it was
-        globalHeader.style.display = 'none';
+    if (pageId === 'page-player') {
+        //globalHeader.style.display = 'none';
     } else if (pageId === 'page-user-login' || pageId === 'page-api-details') {
         // Hide header for login pages
         globalHeader.style.display = 'none';
@@ -86,8 +99,12 @@ function showPage(pageId) {
     // --- VIRTUALIZATION CLEANUP ---
     // If we are navigating *away* from page-content, clear the virtual list
     const currentPageEl = $$('.page[style*="block"]')[0];
-    if (virtualList && (!currentPageEl || currentPageEl.id !== 'page-content') && pageId !== 'page-content') {
-        cleanupVirtualisation();
+    
+    const pagesWithVirtualLists = ['page-content','page-series-details'];
+    if( pagesWithVirtualLists.includes(pageId) === false && pagesWithVirtualLists.includes(currentPageEl?.id) === false ) {
+        if (virtualList) {
+            cleanupVirtualisation();
+        }
     }
     
     // --- END VIRTUALIZATION ---

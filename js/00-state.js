@@ -6,17 +6,23 @@ let isTizen = false;
 let currentUsername = '';
 const defaultUserSettings = {
     favorites: [], // Array of stream_ids
-    toWatch: [], // NEW: Array of stream_ids for "To Watch"
-    watched: {}, // { id: { progress_sec, duration_sec, type, item, episode? } }
+    watching: {}, // { id: { progress_sec, duration_sec, type, item, episode? } }
     theme: 'theme-default',
-    xtreamConfig: {
+    gpu_memory_enhancer:false,
+    hiddenCategories: [], // Array of category_ids to hide
+    pinnedCategories: [], // Array of category_ids to pin to top
+    pl: 0, // Current playlist index
+    xtreamConfig: [{
+        title: 'Default Playlist',
         host: '',
         username: '',
         password: ''
-    }
+    }]
 };
+let currnetCategory = "";
 let userSettings = { ...defaultUserSettings };
 
+let focus_history={};
 let apiBaseUrl = '';
 let navigationStack = []; // For "Back" button functionality
 let tizenAvPlayer; // Holds the Tizen player object
@@ -27,10 +33,15 @@ let saveProgressInterval;
 let lastFocusedElement = null; // For restoring focus after modal
 let clockInterval;
 let initialHash = ''; // <-- NEW: For routing on refresh
-// REMOVED: focus_regesterer (misspelled and unused)
+
+// --- NEW SEARCH STATE ---
+let searchState = {
+    active: false,
+    query: '',
+    originalItems: [] // Backup of full list for filtering
+};
 
 // --- NEW VIRTUALIZATION STATE ---
-// Replaces the old virtualListState object
 let virtualList = null; // Holds the virtual list instance returned by createVirtualList
 let virtualListItems = []; // Holds the data (movies/series) for the virtual list
 let virtualListType = ''; // 'vod' or 'series'
@@ -49,6 +60,9 @@ let tizenPlayerInfo = {
     currentAudioIndex: -1,
     currentSubtitleIndex: -1
 };
+
+let xtreamConfig = userSettings.xtreamConfig[userSettings.pl || 0] || {};
+
 let isTizenPlaying = true;
 let tizenOverlayActive = false;
 let tizenModalActive = false;
@@ -57,3 +71,4 @@ let tizenModalActive = false;
 // This is the source of truth for grid classes
 const GRID_CLASS_DEFAULT = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4 p-4';
 const grid_class = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4 p-4';
+

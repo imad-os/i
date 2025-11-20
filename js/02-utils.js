@@ -32,13 +32,17 @@ function getHeartIcon(isFav) {
      '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
 }
 
-/**
- * NEW: Added missing Watch Later icon function
- */
-function getWatchLaterIcon(isToWatch) {
-    return isToWatch ?
-    '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-primary" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-3.13L5 18V4z" /></svg>' :
-    '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-text" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>';
-}
+const isVisible = el => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
 
-// REMOVED: Extra '}' syntax error was here
+function calcRating(item){
+    let rating = 0;
+
+    if (item.rating_5based != null) {
+        rating = Number(item.rating_5based * 2).toFixed(1);
+    } else if (item.rating != null) {
+        rating = Number(item.rating).toFixed(1);
+    } else {
+        rating = "0.0";
+    }
+    return rating;
+}

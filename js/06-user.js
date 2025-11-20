@@ -7,21 +7,30 @@ function saveUserSettings() {
 
 function loadUserSettings(username) {
     const savedSettings = localStorage.getItem(`iptv-user-${username}`);
+    let parsed;
     if (savedSettings) {
-        userSettings = JSON.parse(savedSettings);
-        // Ensure all keys from default are present
+        parsed = JSON.parse(savedSettings);
+        
+        // --- MIGRATION LOGIC ---
+        // If xtreamConfig is an object (old format), convert to array
+        if (parsed.xtreamConfig && !Array.isArray(parsed.xtreamConfig)) {
+            console.log("Migrating old settings format to array...");
+            parsed.xtreamConfig = [parsed.xtreamConfig];
+            // Ensure title exists
+            if (!parsed.xtreamConfig[0].title) parsed.xtreamConfig[0].title = 'Default Playlist';
+        }
+        // Ensure pl exists
+        if (typeof parsed.pl === 'undefined') {
+            parsed.pl = 0;
+        }
+        // --- END MIGRATION ---
+
         userSettings = {
             ...defaultUserSettings,
-            ...userSettings,
-            // Deeper merge for config
-            xtreamConfig: {
-                ...defaultUserSettings.xtreamConfig,
-                ...(userSettings.xtreamConfig || {})
-            },
-            // Ensure nested objects exist
-            favorites: userSettings.favorites || [],
-            toWatch: userSettings.toWatch || [], // NEW
-            watched: userSettings.watched || {},
+            ...parsed,
+            // Ensure arrays/objects exist
+            favorites: parsed.favorites || [],
+            watching: parsed.watching || {},
         };
     } else {
         userSettings = { ...defaultUserSettings }; // Create new profile
@@ -40,37 +49,41 @@ async function handleUserLogin() {
     }
     
     showLoader(true);
+    loadUserSettings(username);
     try {
         // 1. Try to fetch remote settings
         const response = await fetch(`http://i.geekspro.us/users/${username}.json`);
         if (response.ok) {
-            console.log("Fetched remote user settings.");
             const fetchedSettings = await response.json();
+            
+            // Normalize remote settings too
+            let configArray = fetchedSettings.xtreamConfig;
+            if (configArray && !Array.isArray(configArray)) {
+                configArray = [configArray];
+            }
             userSettings = {
-                ...defaultUserSettings,
+                ...userSettings,
                 ...fetchedSettings,
-                xtreamConfig: {
-                    ...defaultUserSettings.xtreamConfig,
-                    ...(fetchedSettings.xtreamConfig || {})
-                },
+                xtreamConfig: configArray || userSettings.xtreamConfig,
                 favorites : [
-                    ...defaultUserSettings.favorites,
-                    ...fetchedSettings.favorites
+                    ...userSettings.favorites,
+                    ...(fetchedSettings.favorites || [])
                 ],
-                toWatch: fetchedSettings.toWatch || [],
-                watched: fetchedSettings.watched || {},
-                keyMap : fetchedSettings.keyMap || defaultUserSettings.keyMap || {},
+                watching : [
+                    ...userSettings.watching,
+                    ...(fetchedSettings.watching || [])
+                ],
+                keyMap : fetchedSettings.keyMap || userSettings.keyMap || {},
+                pl: (typeof fetchedSettings.pl !== 'undefined') ? fetchedSettings.pl : 0
             };
             
         } else {
             // 2. No remote settings, fall back to localStorage
-            console.log("No remote settings found, loading from localStorage.");
             loadUserSettings(username); // This loads from localStorage or creates new
         }
     } catch (e) {
         showLoader(false);
         // 3. Fetch failed (e.g., offline), fall back to localStorage
-        console.warn("Fetch failed, loading from localStorage.", e);
         loadUserSettings(username); // This loads from localStorage or creates new
 
     } finally {
@@ -81,17 +94,20 @@ async function handleUserLogin() {
         saveUserSettings(); // Save merged settings to localStorage
     }
     
-    // 4. Check if API is configured
-    if (userSettings.xtreamConfig && userSettings.xtreamConfig.host) {
+    // 4. Check if API is configured (for the current playlist)
+    const currentPL = userSettings.pl || 0;
+    const config = userSettings.xtreamConfig[currentPL];
+    
+    if (config && config.host && config.username && config.password) {
         // Test API config
-        handleApiConnect(null,true); // true = isAutoLogin
+        handleApiConnect(null, true); // true = isAutoLogin
     } else {
         // 5. Need to configure API
         $('#api-username').textContent = username;
-        // Pre-fill fields from settings (which might be from user.json)
-        $('#host').value = userSettings.xtreamConfig.host || '';
-        $('#api-user').value = userSettings.xtreamConfig.username || '';
-        $('#api-pass').value = userSettings.xtreamConfig.password || '';
+        $('#playlist-title').value = config ? (config.title || '') : '';
+        $('#host').value = config ? (config.host || '') : '';
+        $('#api-user').value = config ? (config.username || '') : '';
+        $('#api-pass').value = config ? (config.password || '') : '';
         showPage('page-api-details');
     }
 }
@@ -106,74 +122,88 @@ function handleLogout() {
 
 // === API Handling ===
 async function handleApiConnect(e, isAutoLogin = false) {
-    console.log(`handleApiConnect called (isAutoLogin: ${isAutoLogin})`); // DEBUG
-    const config = userSettings.xtreamConfig;
     
-    if (!isAutoLogin) {
-        config.host = $('#host').value.trim();
-        config.username = $('#api-user').value.trim();
-        config.password = $('#api-pass').value.trim();
-        
-        console.log('Reading from form fields:', config); // DEBUG
+    // Determine which playlist we are working on
+    let currentIndex = userSettings.pl;
+    // If for some reason it's invalid, reset to 0
+    if (typeof currentIndex === 'undefined' || currentIndex < 0 || currentIndex >= userSettings.xtreamConfig.length) {
+        currentIndex = 0;
+        userSettings.pl = 0;
     }
 
-    if (!config.host || !config.username || !config.password) {
-        console.log(isAutoLogin)
-        console.log('Validation failed. One or more fields are empty.'); // DEBUG
+    xtreamConfig = userSettings.xtreamConfig[currentIndex];
+    
+    if (!isAutoLogin) {
+        // Read inputs
+        const newTitle = $('#playlist-title').value.trim();
+        const newHost = $('#host').value.trim();
+        const newUser = $('#api-user').value.trim();
+        const newPass = $('#api-pass').value.trim();
+        
+        // Update config object
+        xtreamConfig.title = newTitle || `Playlist ${currentIndex + 1}`;
+        xtreamConfig.host = newHost;
+        xtreamConfig.username = newUser;
+        xtreamConfig.password = newPass;
+        
+        console.log('Reading from form fields:', xtreamConfig);
+    }
+
+    if (!xtreamConfig.host || !xtreamConfig.username || !xtreamConfig.password) {
+        console.log('Validation failed. One or more fields are empty.');
         if (!isAutoLogin) showError('Please fill in all fields.');
-        // Pre-fill fields with the data that just failed
-        $('#host').value = config.host || '';
-        $('#api-user').value = config.username || '';
-        $('#api-pass').value = config.password || '';
+        
+        // Pre-fill fields
+        $('#playlist-title').value = xtreamConfig.title || '';
+        $('#host').value = xtreamConfig.host || '';
+        $('#api-user').value = xtreamConfig.username || '';
+        $('#api-pass').value = xtreamConfig.password || '';
+        
         showPage('page-api-details');
         return;
     }
     
-    console.log('Validation passed. Proceeding to fetch.'); // DEBUG
+    // Normalize Host URL
+    if (!xtreamConfig.host.startsWith('http')) xtreamConfig.host = 'http://' + xtreamConfig.host;
+    if (xtreamConfig.host.endsWith('/')) xtreamConfig.host = xtreamConfig.host.slice(0, -1);
 
-    if (!config.host.startsWith('http')) config.host = 'http://' + config.host;
-    if (config.host.endsWith('/')) config.host = config.host.slice(0, -1);
-
-    apiBaseUrl = `${config.host}/player_api.php`;
+    apiBaseUrl = `${xtreamConfig.host}/player_api.php`;
 
     try {
         // Test login
         const data = await fetchXtream({ action: 'get_vod_categories' });
         if (data) {
             console.log('API connection successful');
-            userSettings.xtreamConfig = config; // Save config
+            
+            // Save back to the array
+            userSettings.xtreamConfig[currentIndex] = xtreamConfig;
             saveUserSettings();
             
-            // --- NEW ROUTING LOGIC ---
-            // Check if we have a deep link hash to handle from page load
+            // --- ROUTING LOGIC ---
             if (initialHash && initialHash !== '#main' && initialHash !== '#login' && initialHash !== '#') {
-                const handled = await handleInitialHash(initialHash); // Make it async
+                const handled = await handleInitialHash(initialHash);
                 if (!handled) {
-                    // If routing failed, go to main
-                    console.warn("Failed to handle hash, defaulting to main.");
                     showPage('page-main');
                     pushToNavStack('page-main');
                 }
             } else {
-                // No hash, just go to main
                 showPage('page-main');
                 pushToNavStack('page-main');
             }
-            initialHash = ''; // Clear the hash, it has been handled
-            // --- END NEW LOGIC ---
+            initialHash = '';
 
         } else {
             throw new Error("Authentication failed or empty response.");
         }
     } catch (error) {
         console.error('API connection failed:', error);
-        // Use the specific error message from fetchXtream
         showError(`API Error: ${error.message}`);
         
-        // Pre-fill fields with the data that just failed
-        $('#host').value = config.host || '';
-        $('#api-user').value = config.username || '';
-        $('#api-pass').value = config.password || '';
+        // Pre-fill fields
+        $('#playlist-title').value = xtreamConfig.title || '';
+        $('#host').value = xtreamConfig.host || '';
+        $('#api-user').value = xtreamConfig.username || '';
+        $('#api-pass').value = xtreamConfig.password || '';
         
         showPage('page-api-details');
     }

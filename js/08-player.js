@@ -4,25 +4,25 @@
  * NEW: Handles the click on a movie item.
  * Tries to fetch info and show modal. Falls back to direct play.
  */
-async function handleMovieClick(item, startTime = 0) {
-    currentItem = item; // Store for progress saving
-    currentEpisode = null;
-    showLoader(true);
-    
-    try {
-        const info = await fetchXtream({ action: 'get_vod_info', vod_id: item.stream_id });
-        if (!info || !info.movie_data) throw new Error("Could not load movie info.");
-        
-        // Info fetched, show modal
-        showMovieDetailsModal(info, item, startTime);
 
-    } catch(e) {
-        console.warn("Failed to get movie info, playing directly.", e);
-        // Info failed, play directly
-        playMovie(item, startTime, null);
-    } finally {
-        showLoader(false);
+let stream_info = {};
+
+
+async function handleMovieClick() {
+    const active_page = $$('.page[style*="block"]')[0];
+    if (active_page && active_page.id ==='page-series-details') {
+        return;
     }
+    currentsteamId = $(".vitem.focused").dataset.streamId;
+    currentItem = virtualListMap.get(currentsteamId) || null;
+    currentEpisode = null;    
+    lastFocusedElement = document.activeElement;
+
+    //showMovieDetailsModal(item, item, startTime);
+    $('#details-play').focus();
+    $("#content-grid").classList.add("disabled");
+    $("#details-view-panel").classList.add("activeView");
+    DetailsView.fetchFullDetails(currentItem, currnetCategory);
 }
 
 /**
@@ -34,24 +34,24 @@ function playMovie(item, startTime, info = null) {
     currentEpisode = null;
     showPage('page-player');
     pushToNavStack('page-player');
-    
+    const _info = info || stream_info || {};
     let ext, streamUrl, details, subtitles = null;
 
-    if (!info || !info.movie_data) {
+    if (!_info || !_info.movie_data) {
         // This branch is for when info *failed* and we're playing directly.
         console.warn("Playing without full info, guessing extension.");
         ext = 'mp4'; // Guess
-        streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+        streamUrl = `${xtreamConfig.host}/movie/${xtreamConfig.username}/${xtreamConfig.password}/${item.stream_id}.${ext}`;
         details = { name: item.name, rating: item.rating };
     } else {
         // This branch is when info *succeeded* and we're playing from the modal.
-        ext = info.movie_data.container_extension || 'mp4';
-        streamUrl = `${userSettings.xtreamConfig.host}/movie/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.${ext}`;
+        ext = _info.movie_data.container_extension || 'mp4';
+        streamUrl = `${xtreamConfig.host}/movie/${xtreamConfig.username}/${xtreamConfig.password}/${item.stream_id}.${ext}`;
         details = {
-            name: info.info.name || item.name,
-            rating: info.info.rating_5based || item.rating
+            name: _info.info.name || item.name,
+            rating: calcRating(item)
         };
-        subtitles = info.movie_data.subtitles || null; // Get subtitles
+        subtitles = _info.movie_data.subtitles || null; // Get subtitles
     }
     
     if (isTizen) startTizenPlayer(streamUrl, details, startTime, 'vod', subtitles);
@@ -64,8 +64,11 @@ async function playLive(item) {
     showPage('page-player');
     pushToNavStack('page-player');
     
-    const streamUrl = `${userSettings.xtreamConfig.host}/live/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${item.stream_id}.ts`;
+    const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.username}/${xtreamConfig.password}/${item.stream_id}.ts`;
     const details = { name: item.name, rating: null };
+
+    // Stop any existing preview playback first
+    stopPlayer(true); // true = keep data, just stop media
 
     if (isTizen) startTizenPlayer(streamUrl, details, 0, 'live');
     else startWebPlayer(streamUrl, details, 0, 'live');
@@ -79,10 +82,11 @@ function playEpisode(episode, seriesItem, startTime = 0) {
     pushToNavStack('page-player');
     
     const ext = episode.container_extension || 'mp4';
-    const streamUrl = `${userSettings.xtreamConfig.host}/series/${userSettings.xtreamConfig.username}/${userSettings.xtreamConfig.password}/${episode.stream_id}.${ext}`;
+    const stream_id = episode.stream_id ||episode.id;
+    const streamUrl = `${xtreamConfig.host}/series/${xtreamConfig.username}/${xtreamConfig.password}/${stream_id}.${ext}`;
     const details = {
         name: `${seriesItem.name} - S${String(episode.season).padStart(2, '0')}E${String(episode.episode_num).padStart(2, '0')}`,
-        rating: seriesItem.rating_5based || seriesItem.rating
+        rating: calcRating(seriesItem)
     };
     
     // For series, subtitles are often embedded, not external
@@ -145,6 +149,8 @@ function startWebPlayer(url, details, startTime, type, subtitles = null) {
     // Start periodic saving
     clearInterval(saveProgressInterval); // Clear any old ones
     saveProgressInterval = setInterval(saveUserSettings, 15000); // Save every 15s
+
+    
 }
 
 // --- TIZEN PLAYER OVERLAY ---
@@ -536,24 +542,29 @@ function startTizenPlayer(url, details, startTime, type, subtitles = null) {
     }
 }
 
-function stopPlayer() {
+function stopPlayer(softStop = false) {
     clearInterval(saveProgressInterval); // Stop periodic saving
-    saveUserSettings(); // Do one final save
-    currentItem = null;
-    currentEpisode = null;
+    if (!softStop) {
+        saveUserSettings(); // Do one final save if completely stopping
+        currentItem = null;
+        currentEpisode = null;
+    }
     
-    if (isTizen && tizenAvPlayer) {
+    if (isTizen && typeof webapis !== 'undefined' && webapis.avplay) {
         try {
-            console.log("Stopping Tizen Player");
+            console.log("Stopping Tizen Player (Soft: " + softStop + ")");
             // Hide overlay first
             hideTizenOverlay();
             tizenOverlayActive = false;
             tizenModalActive = false;
 
             webapis.avplay.stop();
-            webapis.avplay.close();
-            tizenAvPlayer = null;
-            $('#tizen-player-container').innerHTML = '';
+            if (!softStop) {
+                 // Only close and remove object if fully quitting the player
+                 webapis.avplay.close();
+                 tizenAvPlayer = null;
+                 $('#tizen-player-container').innerHTML = '';
+            }
         } catch (e) {
             console.error("Error stopping Tizen player:", e);
         }

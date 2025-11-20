@@ -1,10 +1,21 @@
 // === API Handling ===
 
-async function fetchXtream(params) {
-    showLoader(true);
+async function fetchXtream(params, loading=true) {
+    if (loading){
+        showLoader(true);
+    }
+    
+    
+    // Safety check
+    if (!xtreamConfig || !xtreamConfig.host) {
+         showLoader(false);
+         showError("Invalid playlist configuration.");
+         throw new Error("Invalid playlist configuration");
+    }
+
     const urlParams = new URLSearchParams({
-        username: userSettings.xtreamConfig.username,
-        password: userSettings.xtreamConfig.password,
+        username: xtreamConfig.username,
+        password: xtreamConfig.password,
         ...params
     });
 
@@ -22,7 +33,9 @@ async function fetchXtream(params) {
              throw new Error("Xtream API: Authentication failed.");
         }
         
-        showLoader(false);
+        if (loading){
+            showLoader(false);
+        }
         return data;
     } catch (error) {
         console.error('Fetch error:', error);

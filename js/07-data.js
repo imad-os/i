@@ -1,4 +1,4 @@
-// === Favorites & Watched Logic ===
+// === Favorites & watching Logic ===
 
 function isFavorite(stream_id) {
     return userSettings.favorites.includes(String(stream_id));
@@ -26,70 +26,29 @@ function toggleFavorite(stream_id, type, item) {
     }
     
     // Need to save the full item for "Favorites" category
-    // We'll store it in the 'watched' object as it can hold item data
+    // We'll store it in the 'watching' object as it can hold item data
     const key = type === 'series' ? item.series_id : item.stream_id;
     // Ensure item type is stored correctly for filtering
     const itemType = type === 'series' ? 'series' : (item.stream_type || type);
-    if (!userSettings.watched[key]) {
-         userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
+    if (!userSettings.watching[key]) {
+         userSettings.watching[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
     } else {
-         // Update type if it's missing, e.g. from an old 'watched' entry
-         userSettings.watched[key].type = itemType;
-         userSettings.watched[key].item = item; // Update item
+         // Update type if it's missing, e.g. from an old 'watching' entry
+         userSettings.watching[key].type = itemType;
+         userSettings.watching[key].item = item; // Update item
     }
     
     saveUserSettings();
 }
-
-// --- NEW "TO WATCH" ---
-function isToWatch(stream_id) {
-    return userSettings.toWatch.includes(String(stream_id));
-}
-
-function toggleWatchLater(stream_id, type, item) {
-     if (!stream_id || !type || !item) {
-         const focusedItem = document.activeElement;
-         stream_id = focusedItem.dataset.streamId;
-         type = focusedItem.dataset.type;
-         item = JSON.parse(focusedItem.dataset.item);
-    }
-
-    const idStr = String(stream_id);
-    const bookmarkIcon = $(`#towatch-icon-${idStr}`); // For grid (not yet implemented)
-    
-    if (isToWatch(idStr)) {
-        userSettings.toWatch = userSettings.toWatch.filter(id => id !== idStr);
-        if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(false); // Update UI
-        console.log("Removed from To Watch");
-    } else {
-        userSettings.toWatch.push(idStr);
-        if (bookmarkIcon) bookmarkIcon.innerHTML = getWatchLaterIcon(true); // Update UI
-        console.log("Added to To Watch");
-    }
-    
-    // Need to save the full item for "To Watch" category
-    // We'll store it in the 'watched' object as it can hold item data
-    const key = type === 'series' ? item.series_id : item.stream_id;
-    const itemType = type === 'series' ? 'series' : (item.stream_type || type);
-    if (!userSettings.watched[key]) {
-         userSettings.watched[key] = { progress_sec: 0, duration_sec: 0, type: itemType, item: item };
-    } else {
-         userSettings.watched[key].type = itemType;
-         userSettings.watched[key].item = item; // Update item
-    }
-    
-    saveUserSettings();
-}
-
 
 /**
- * Gets watched progress for a VOD item or a Series.
+ * Gets watching progress for a VOD item or a Series.
  * @param {string} id - The stream_id (VOD) or series_id (Series).
  * @param {string|null} [episode_id=null] - (For Series) The specific episode ID to check progress for.
  * @returns {object|null} The progress object or null.
  */
-function getWatchedProgress(id, episode_id = null) {
-    const progress = userSettings.watched[String(id)];
+function getwatchingProgress(id, episode_id = null) {
+    const progress = userSettings.watching[String(id)];
     if (!progress) return null;
 
     if (progress.type === 'series' && episode_id) {
@@ -100,7 +59,7 @@ function getWatchedProgress(id, episode_id = null) {
         return null; // Progress exists for the series, but a different episode
     }
     
-    // For VOD, or just checking series-level (last watched)
+    // For VOD, or just checking series-level (last watching)
     return progress;
 }
 
@@ -139,13 +98,13 @@ function saveProgress(item, currentTime, duration, type, episodeData = null) {
         return; // Don't save progress for Live TV
     }
     
-    // Don't overwrite a full 'watched' item with a 'progress' item
+    // Don't overwrite a full 'watching' item with a 'progress' item
     // e.g. if it was just saved for favorites
-    const existing = userSettings.watched[idStr];
+    const existing = userSettings.watching[idStr];
     if (existing) {
-        userSettings.watched[idStr] = { ...existing, ...progressData };
+        userSettings.watching[idStr] = { ...existing, ...progressData };
     } else {
-        userSettings.watched[idStr] = progressData;
+        userSettings.watching[idStr] = progressData;
     }
 
     // Note: We don't call saveUserSettings() here to avoid spamming localStorage

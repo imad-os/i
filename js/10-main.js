@@ -3,7 +3,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App initializing...");
-    
     // --- NEW: HASH HANDLING ON LOAD ---
     initialHash = location.hash;
     if (initialHash) {
@@ -12,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         history.replaceState(null, '', '/');
     }
     // --- END HASH HANDLING ---
-
     detectTizen();
     setupKeyListeners();
     setupEventListeners();
@@ -37,27 +35,33 @@ function detectTizen() {
                 const activePageId = navigationStack[navigationStack.length - 1]?.pageId;
                 
                 if (e.keyName === "back") {
-                    // NEW: If modal is open, close it
+                    // --- SEARCH OVERRIDE ---
+                    if (searchState.active || (searchState.query && searchState.query.length > 0)) {
+                        clearSearch();
+                        return;
+                    }
+                    
                     if (tizenModalActive) {
                         hideTizenTrackModal();
                         return;
                     }
-                    // NEW: If overlay is active on player page, hide it
                     if (activePageId === 'page-player' && tizenOverlayActive) {
                         hideTizenOverlay();
                         return;
                     }
-                    
-                    if ($('#movie-details-modal').style.display === 'flex') {
-                        hideMovieDetailsModal();
+                    if (activePageId === 'page-live-tv') {
+                        stopPlayer(); // Stop preview player
+                        goBack();
+                        return;
+                    }
+                    if ($("#details-view-panel").classList.contains("activeView")) {
+                        backToMoviesList();
                     } else {
                         goBack();
                     }
                 }
             });
 
-            // --- NEW TIZEN PLAYER KEY HANDLER ---
-            // Register keys for media playback
             try {
                 tizen.key.registerKey("MediaPlayPause");
                 tizen.key.registerKey("MediaPlay");
@@ -65,11 +69,11 @@ function detectTizen() {
                 tizen.key.registerKey("MediaStop");
                 tizen.key.registerKey("MediaFastForward");
                 tizen.key.registerKey("MediaRewind");
+                tizen.key.registerKey("ChannelUp");
+                tizen.key.registerKey("ChannelDown");
             } catch (e) {
                 console.warn("Could not register media keys.", e);
             }
-            // --- END NEW HANDLER ---
-
         } else {
             console.log("Standard Web platform detected. Using HTML5 <video> player.");
         }
@@ -88,40 +92,68 @@ function setupEventListeners() {
     });
 
     // API Connect
-    $('#api-connect-button').addEventListener('click', handleApiConnect);
+    $('#api-connect-button').addEventListener('click', () => handleApiConnect(null, false));
     
+    // NEW: Header Playlist Button
+    $('#header-playlists-button').addEventListener('click', showPlaylistsPage);
+    
+    // NEW: Add Playlist Button
+    $('#add-playlist-button').addEventListener('click', addNewPlaylist);
+    
+    // NEW: Search UI Handlers
+    $('#search-clear-btn').addEventListener('click', () => toggleSearchBar(false));
+    
+    // Search Input Debounce
+    let searchTimeout;
+    $('#search-input').addEventListener('input', (e) => {
+        const query = e.target.value;
+        searchState.query = query;
+        
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+             filterContent(query);
+        }, 300); // 300ms debounce
+    });
+    
+    // Tizen virtual keyboard enter
+    $('#search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.target.blur(); // Hide keyboard
+        }
+    });
+
     // Settings Page
     $('#logout-button').addEventListener('click', handleLogout);
     $('#change-api-button').addEventListener('click', () => {
         // Save current page to stack before moving
         pushToNavStack($$('.page[style*="block"]')[0].id);
+        
+        // Fill inputs with current playlist data
+        const currentPL = userSettings.pl || 0;
+        xtreamConfig = userSettings.xtreamConfig[currentPL] || {};
+        
+        $('#playlist-title').value = xtreamConfig.title || '';
+        $('#host').value = xtreamConfig.host || '';
+        $('#api-user').value = xtreamConfig.username || '';
+        $('#api-pass').value = xtreamConfig.password || '';
+        
         showPage('page-api-details');
     });
     
-    // PERFORMANCE: Replace confirm() with a custom modal (TBD)
-    // For now, confirm() is left but this is bad for Tizen
-    
     $('#clear-favorites-button').addEventListener('click', () => {
-        // TBD: Replace with custom modal
-        // if (confirm('Are you sure you want to clear all favorites?')) {
             userSettings.favorites = [];
             saveUserSettings();
             showError('Favorites cleared.');
-        // }
     });
-    $('#clear-watched-button').addEventListener('click', () => {
-         // TBD: Replace with custom modal
-        // if (confirm('Are you sure you want to clear all watched progress?')) {
-            userSettings.watched = {};
+    $('#clear-watching-button').addEventListener('click', () => {
+            userSettings.watching = {};
             saveUserSettings();
-            showError('Watched progress cleared.');
-        // }
+            showError('watching progress cleared.');
     });
 }
 
 // --- NEW TIZEN PLAYER KEY HANDLER ---
 function handleTizenPlayerKeys(e) {
-    // If modal is active, only handle navigation within it
     if (tizenModalActive) {
         handleArrowNavigation(e.key, '#tizen-track-modal');
         if (e.key === 'Enter') {
@@ -130,17 +162,13 @@ function handleTizenPlayerKeys(e) {
         return;
     }
 
-    // If overlay is not active, specific keys should show it
     if (!tizenOverlayActive) {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
             showTizenOverlay();
-            // Don't consume the event, let it be handled again when overlay is visible
-            // except for 'Enter' which just shows overlay
             if (e.key === 'Enter') return;
         }
     }
 
-    // Handle Media Keys
     switch (e.key) {
         case 'MediaPlayPause':
         case 'MediaPlay':
@@ -154,14 +182,16 @@ function handleTizenPlayerKeys(e) {
             tizenSeek('backward');
             return;
         case 'MediaStop':
-            goBack(); // Exit player
+            goBack(); 
+            return;
+        case 'ChannelUp':
+        case 'ChannelDown':
+            // Logic to change channel could go here if we have a playlist reference
             return;
     }
     
-    // Handle Navigation only if overlay is active
     if (!tizenOverlayActive) return;
 
-    // --- Overlay is Active ---
     if (e.key === 'Enter') {
         document.activeElement?.click();
         return;
@@ -169,15 +199,11 @@ function handleTizenPlayerKeys(e) {
     
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         handleArrowNavigation(e.key, '#tizen-player-overlay');
-        
-        // Custom seek logic for progress bar
         const focused = document.activeElement;
         if (focused && focused.id === 'tizen-progress-bar') {
             if (e.key === 'ArrowLeft') tizenSeek('backward');
             if (e.key === 'ArrowRight') tizenSeek('forward');
         }
-        
-        // Keep overlay alive
         clearTimeout(tizenOverlayTimer);
         tizenOverlayTimer = setTimeout(hideTizenOverlay, 7000);
     }
@@ -188,13 +214,20 @@ function setupKeyListeners() {
     document.addEventListener('keydown', (e) => {
         const activePageId = navigationStack[navigationStack.length - 1]?.pageId;
         
-        // --- NEW: Tizen Player Page Handling ---
+        // If search input is focused, allow typing but handle Enter/Escape
+        if (searchState.active && document.activeElement.id === 'search-input') {
+             if (e.key === 'Escape' || e.key === 'Back') {
+                 clearSearch();
+             }
+             // Don't block other keys
+             return;
+        }
+
         if (isTizen && activePageId === 'page-player') {
             e.preventDefault();
             handleTizenPlayerKeys(e);
-            return; // Stop further execution
+            return;
         }
-        // --- END NEW ---
 
         const nav_buttons = [
             "ArrowUp",
@@ -204,77 +237,103 @@ function setupKeyListeners() {
             "Enter",
         ];
 
-        // 1. Global Keys
-        if (e.key === 'Escape' || e.key === 'Back') { // Add 'Back' for webOS/etc
-            // Check if modal is open
-            if ($('#movie-details-modal').style.display === 'flex') {
-                hideMovieDetailsModal();
+        if (e.key === 'Escape' || e.key === 'Back') { 
+            // --- SEARCH OVERRIDE ---
+            if (searchState.active || (searchState.query && searchState.query.length > 0)) {
+                clearSearch();
+                return;
+            }
+            
+            if (activePageId === 'page-live-tv') {
+                stopPlayer();
+                goBack();
+                return;
+            }
+            if ($("#details-view-panel").classList.contains("activeView")) {
+                backToMoviesList();
             } else {
                 goBack();
             }
             return;
         }
         
-        // 2. Navigation Keys (Arrows/Enter)
         if ( nav_buttons.includes(e.key)) {
-            e.preventDefault();
+            // Prevent default scrolling
+            if(document.activeElement.id !== 'search-input') e.preventDefault();
             
-            // --- VIRTUAL LIST: Handle Enter Key ---
             if (e.key === 'Enter') {
-                if (virtualList && activePageId === 'page-content' && document.activeElement.className=="theme-default") {
-                    // Find the focused item by class and click it
+                // Special handling for Live TV Channel List "Double Enter"
+                if (activePageId === 'page-live-tv' && document.activeElement.closest('#live-channels-list')) {
+                    // Standard click is handled by onclick (Preview/Fullscreen)
+                    // We just fall through to the click trigger below
+                }
+
+                if (virtualList && activePageId === 'page-content' && document.activeElement.tagName=="BODY") {
                     const focusedEl = $('#page-content .vitem.focused');
                     if (focusedEl) {
+                        focus_history[activePageId] = focusedEl;
                         focusedEl.click();
-                        // focus_regesterer isn't reliable here
                     }
                 } else {
-                    // Normal page enter
+                    focus_history[activePageId] = document.activeElement;
                     document.activeElement?.click();
-                    // focus_regesterer[activePageId] = document.activeElement; // This was removed, but logic is sound
                 }
                 return;
             }
-            // --- END VIRTUAL LIST ---
             
-            // Check if modal is open and handle nav inside it
-            if ($('#movie-details-modal').style.display === 'flex') {
-                handleArrowNavigation(e.key, '#movie-details-modal');
+            if ($("#details-view-panel").classList.contains("activeView")) {
+                handleArrowNavigation(e.key, '#details-view-panel');
+            }else if ( isVisible( $("#category-manager-title") ) ) {
+                handleArrowNavigation(e.key, '#category-manager-modal');
             } else {
                 handleArrowNavigation(e.key);
             }
             return;
         }
         
-        // 3. Context-specific Keys
-        // This is updated to work with the new virtual list focus
-        if (activePageId === 'page-content' || (activePageId === 'page-categories' && (navigationStack[navigationStack.length-1].context?.special === 'favorites' || navigationStack[navigationStack.length-1].context?.special === 'watched'))) {
+        if (activePageId === 'page-content' || (activePageId === 'page-categories' && (navigationStack[navigationStack.length-1].context?.special === 'favorites' || navigationStack[navigationStack.length-1].context?.special === 'watching'))) {
             
             let targetItem;
             if (virtualList) {
-                // Get item from virtual list
                 targetItem = virtualListItems[focusedVirtualIndex];
             } else {
-                // Get item from DOM
                 const focusedElement = document.activeElement;
                 if (focusedElement && focusedElement.dataset.item) {
                     targetItem = JSON.parse(focusedElement.dataset.item);
                 }
             }
             
-            if (!targetItem) return; // No item to action
+            if (!targetItem) return;
             
             const type = targetItem.stream_type || virtualListType;
             const stream_id = targetItem.stream_id || targetItem.series_id;
 
             if (e.key === 'f') {
                 toggleFavorite(stream_id, type, targetItem);
-                // Update UI (virtual list will auto-update on next render, but we can force)
                 if(virtualList) virtualList.highlight(focusedVirtualIndex);
-                // TODO: Update non-virtual list UI
             }
             if (e.key === 'w') {
-                toggleWatchLater(stream_id, type, targetItem);
+                // toggleWatchLater(stream_id, type, targetItem);
+            }
+        }
+        
+        // Channel Up/Down for Preview Mode in Live TV
+        if (activePageId === 'page-live-tv') {
+            if (e.key === 'ChannelUp' || e.key === 'ChannelDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                 // Simple channel surfing logic in preview
+                 const channels = Array.from($$('#live-channels-list .nav-item'));
+                 const currentIndex = channels.indexOf(document.activeElement);
+                 let nextIndex = currentIndex;
+                 
+                 if (e.key === 'ChannelUp' || e.key === 'PageUp') nextIndex = currentIndex - 1;
+                 if (e.key === 'ChannelDown' || e.key === 'PageDown') nextIndex = currentIndex + 1;
+                 
+                 if (nextIndex >= 0 && nextIndex < channels.length) {
+                     const nextBtn = channels[nextIndex];
+                     nextBtn.focus();
+                     nextBtn.click(); // Trigger preview
+                     nextBtn.scrollIntoView({ block: 'nearest' });
+                 }
             }
         }
     });
@@ -284,8 +343,40 @@ function handleArrowNavigation(key, parentSelector = null) {
     const activePage = parentSelector ? $(parentSelector) : $('.page[style*="block"]');
     if (!activePage) return;
     
-    // --- NEW VIRTUAL LIST NAVIGATION ---
-    // If we are on page-content and the virtual list is active, use index-based nav
+    // --- SPECIAL LIVE TV 3-PANE NAVIGATION ---
+    if (activePage.id === 'page-live-tv') {
+        const focused = document.activeElement;
+        const inCategoryList = focused.closest('#live-categories-list');
+        const inChannelList = focused.closest('#live-channels-list');
+        
+        if (key === 'ArrowRight') {
+            if (inCategoryList) {
+                // Move from Category to Channel List (First item)
+                const firstChannel = $('#live-channels-list .nav-item');
+                if (firstChannel) firstChannel.focus();
+                else {
+                    // If no channels loaded, trigger load?
+                }
+                return;
+            }
+            // If in Channel List -> Do nothing
+            return;
+        }
+        
+        if (key === 'ArrowLeft') {
+            if (inChannelList) {
+                // Move from Channel to Category List (Current active item)
+                const categories = Array.from($$('#live-categories-list .nav-item'));
+                const firstCat = categories[0];
+                if (firstCat) firstCat.focus();
+                return;
+            }
+            return;
+        }
+    }
+    // -----------------------------------------
+
+    
     if (activePage.id === 'page-content' && virtualList) {
         const cols = virtualList.getCols();
         const itemCount = virtualListItems.length;
@@ -296,11 +387,9 @@ function handleArrowNavigation(key, parentSelector = null) {
         } else if (key === 'ArrowLeft') {
             if (newIndex - 1 >= 0) newIndex--;
         } else if (key === 'ArrowDown') {
-            // Move down by a row (cols)
             if (newIndex + cols < itemCount) {
                  newIndex += cols;
             } else {
-                // If at bottom, go to last item
                 newIndex = itemCount - 1;
             }
         } else if (key === 'ArrowUp') {
@@ -313,33 +402,54 @@ function handleArrowNavigation(key, parentSelector = null) {
                 virtualList.highlight(focusedVirtualIndex);
             });
         }
-        return; // We are done
+        return; 
     }
-    // --- END VIRTUAL LIST NAVIGATION ---
     
-    // --- START: Original DOM-based navigation for all other pages ---
     let focusableItems = [];
-    
+    console.log("............. Parent Selector:", parentSelector);
+    console.log("............. activePage.id:", activePage.id);
     if (parentSelector) {
-        // We are inside a modal or overlay
         focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+        if (parentSelector === '#details-view-panel') {
+            focusableItems = Array.from(activePage.querySelectorAll('button'));
+        }
+        if (parentSelector === '#category-manager-modal') {
+            focusableItems = Array.from(activePage.querySelectorAll('button'));
+        }
     } else if (activePage.id === 'page-categories') {
          focusableItems = Array.from(activePage.querySelectorAll('#category-grid .nav-item'));
     } else if (activePage.id === 'page-content') {
-         // This now only runs for NON-VIRTUAL lists
          focusableItems = Array.from(activePage.querySelectorAll('#content-grid .nav-item'));
+    } else if (activePage.id === 'page-playlists') {
+         focusableItems = Array.from(activePage.querySelectorAll('#playlists-list .nav-item, #add-playlist-button'));
     } else if (activePage.id === 'page-series-details') {
         focusableItems = Array.from(activePage.querySelectorAll('#series-fav-button, #series-watch-later-button, #series-seasons-tabs .nav-item, #series-episodes-list .nav-item'));
     } else if (activePage.id === 'page-main') {
-         focusableItems = Array.from(activePage.querySelectorAll('[onclick*="loadCategories"]'));
+         focusableItems = Array.from(activePage.querySelectorAll('[onclick*="loadCategories"]'));0
+    } else if (activePage.id === 'page-live-tv') {
+        // Constrain focus list based on which column we are in to prevent jumping between columns via Up/Down
+        const focused = document.activeElement;
+        if (focused.closest('#live-categories-list')) {
+            focusableItems = Array.from(activePage.querySelectorAll('#live-categories-list .nav-item'));
+        } else if (focused.closest('#live-channels-list')) {
+            focusableItems = Array.from(activePage.querySelectorAll('#live-channels-list .nav-item'));
+        } else {
+            focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
+        }
     } else {
         focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
     }
-
-    // TIZEN OVERLAY: Don't include header buttons if it's the player overlay
-    if (parentSelector !== '#tizen-player-overlay') {
+    
+    // Include Header Buttons (except overlay/modal)
+    if (parentSelector !== '#tizen-player-overlay' && parentSelector !== '#details-view-panel' && activePage.id !== 'page-live-tv') {
         const headerButtons = Array.from($$("#global-header button"));
-        focusableItems = [...headerButtons, ...focusableItems];
+        const visibleHeaderButtons = headerButtons.filter(b => b.offsetParent !== null);
+        
+        // Include search UI buttons if visible
+        const searchButtons = Array.from($$("#search-bar-container button, #search-bar-container input"));
+        const visibleSearchButtons = searchButtons.filter(b => b.offsetParent !== null);
+
+        focusableItems = [...visibleHeaderButtons, ...visibleSearchButtons, ...focusableItems];
     }
     
     if (focusableItems.length === 0) return;
@@ -349,7 +459,7 @@ function handleArrowNavigation(key, parentSelector = null) {
     if (currentIndex === -1) {
         let firstItem;
         if (parentSelector === '#tizen-player-overlay') {
-            firstItem = $('#tizen-play-pause-button'); // Default to play/pause
+            firstItem = $('#tizen-play-pause-button');
         } else {
             firstItem = focusableItems[0];
         }
@@ -357,23 +467,17 @@ function handleArrowNavigation(key, parentSelector = null) {
         return;
     }
 
-    // Get geometry
     const currentRect = focusableItems[currentIndex].getBoundingClientRect();
-    
     let nextItem = null;
     let minDistance = Infinity;
     
-    // Simple grid logic for grids
     const grid = activePage.querySelector('#content-grid, #category-grid');
-    if (grid && !parentSelector) { // Only apply grid logic if not in modal
-        
+    if (grid && !parentSelector && activePage.id !== 'page-live-tv') { 
         let columns = 1;
-        // Get computed columns for category grid or non-virtual content grid
         const gridStyle = window.getComputedStyle(grid);
         if (gridStyle) {
             columns = gridStyle.getPropertyValue('grid-template-columns').split(' ').length;
         }
-        
         let nextIndex = -1;
         if (key === 'ArrowRight') nextIndex = currentIndex + 1;
         else if (key === 'ArrowLeft') nextIndex = currentIndex - 1;
@@ -382,13 +486,12 @@ function handleArrowNavigation(key, parentSelector = null) {
 
         if (nextIndex >= 0 && nextIndex < focusableItems.length) {
             focusableItems[nextIndex].focus();
-            // --- FIX: Use 'nearest' here too ---
             focusableItems[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             return;
         }
     }
     
-    // Fallback: Find closest item in the desired direction (for mixed layouts)
+    // Standard Spatial Navigation
     focusableItems.forEach((item, index) => {
         if (index === currentIndex) return;
         const itemRect = item.getBoundingClientRect();
@@ -399,7 +502,7 @@ function handleArrowNavigation(key, parentSelector = null) {
             case 'ArrowRight':
                 if (itemRect.left > currentRect.left || (itemRect.left === currentRect.left && itemRect.top > currentRect.top)) {
                     isCandidate = true;
-                    distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2); // Prioritize horizontal
+                    distance = Math.hypot(itemRect.left - currentRect.left, (itemRect.top - currentRect.top) * 2);
                 }
                 break;
             case 'ArrowLeft':
@@ -411,7 +514,7 @@ function handleArrowNavigation(key, parentSelector = null) {
             case 'ArrowDown':
                 if (itemRect.top > currentRect.top) {
                     isCandidate = true;
-                    distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top); // Prioritize vertical
+                    distance = Math.hypot((itemRect.left - currentRect.left) * 2, itemRect.top - currentRect.top);
                 }
                 break;
             case 'ArrowUp':
@@ -430,14 +533,6 @@ function handleArrowNavigation(key, parentSelector = null) {
     
     if (nextItem) {
         nextItem.focus();
-        // --- FIX: Use 'nearest' to scroll the minimum amount ---
         nextItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
-    // --- FIX: REMOVED two lines here that were causing errors ---
-    // The lines 'virtualList.ensureVisible(focusedIndex);'
-    // and 'virtualList.highlight(focusedIndex);' were here
-    // and breaking navigation on all non-virtual pages.
-
-    // --- END: Original DOM-based navigation ---
 }

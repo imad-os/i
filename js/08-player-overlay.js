@@ -49,6 +49,7 @@ Usage:
             <div class="meta-left">
               <div id="overlay-movie-name" class="title">Unknown Title</div>
               <div id="overlay-movie-rating" class="rating" aria-hidden="true"></div>
+              <div id="overlay-player-type" class="player-type">[--]</div>
             </div>
             <div id="overlay-current-clock" class="clock">--:--</div>
           </div>
@@ -112,11 +113,15 @@ Usage:
     }
   
     function getActivePlayer() {
-      if (isTizen && window.webapis && window.webapis.avplay) return { type: 'tizen', obj: webapis.avplay };
-      const v = cache.webVideo || $('#web-video-player');
-      if (v) cache.webVideo = v;
-      if (v) return { type: 'web', obj: v };
-      return null;
+      if (isTizen && window.webapis && window.webapis.avplay) {
+        if (cache.playerType) cache.playerType.textContent = "[native]";
+        return { type: 'tizen', obj: webapis.avplay };
+      }
+      
+      if (v) {
+          if (cache.playerType) cache.playerType.textContent = "[html5]";
+          return { type: 'web', obj: v };
+      }
     }
   
     function togglePlayPause() {
@@ -231,6 +236,7 @@ Usage:
       cache.clock = $('#overlay-current-clock');
       cache.title = $('#overlay-movie-name');
       cache.rating = $('#overlay-movie-rating');
+      cache.playerType = $('#overlay-player-type');
       cache.streamStatus = $('#stream-status');
       cache.streamResolution = $('#stream-resolution');
       cache.streamQuality = $('#stream-quality');
@@ -251,6 +257,8 @@ Usage:
   
       hideOverlay();
     }
+
+    
   
     window.playerOverlay = { init, showOverlay, hideOverlay, setOverlayDetails, updateStreamInfo };
   })();

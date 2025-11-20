@@ -31,6 +31,7 @@ body {
     padding-left: 1rem;
     padding-right: 1rem;
     box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 /* Define the 5 theme classes */
 .theme-default {
@@ -138,7 +139,7 @@ body {
     outline: none;
     border-color: var(--color-primary);
     border-width: 5px;
-    z-index: 20;
+    /*z-index: 20;*/
 }
 
 /* Set padding on the virtual list wrapper */
@@ -160,17 +161,17 @@ body {
     border-radius: 0.5rem; /* Ensure this matches rounded-lg */
 }
 .nav-item-sm {
-    border: 5px solid transparent;
+    border: 3px solid transparent;
 }
 .nav-item:focus {
     outline: none;
     border-color: var(--color-primary);
-    border-width: 5px;
+    border-width: 3px;
 }
 .nav-item-sm:focus {
     outline: none;
     border-color: var(--color-primary);
-    border-width: 5px;
+    border-width: 3px;
     /* Special focus for small theme buttons */
 }
 
@@ -219,6 +220,7 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+    background-color: black;
 }
 /* The Tizen player object must be styled this way */
 #av-player {
@@ -246,7 +248,7 @@ body {
 }
 
 
-/* Watched Progress Bar */
+/* watching Progress Bar */
 .progress-bar {
     height: 6px;
     background-color: #555;
@@ -254,7 +256,7 @@ body {
 }
 .progress-bar-inner {
     height: 100%;
-    background-color: var(--color-primary);
+    background-color: var(--color-red-600);
     transition: width 0.2s ease;
 }
 #current-time {
@@ -269,3 +271,69 @@ body {
     overflow: auto;
     max-height: 200px;
 }
+
+/* === Details View (Split Layout) === */
+
+/* When Split Layout is Active */
+.split-layout {
+    display: flex !important; /* Override block */
+    flex-direction: row;
+    width: 100% !important; /* Override fixed 1300px */
+    padding-right: 0 !important;
+    padding-left: 2rem !important;
+    gap: 20px;
+    overflow: hidden !important; /* Prevent page scroll, internal scroll only */
+}
+
+/* Grid adjustments in Split Mode */
+.split-layout #content-grid {
+    flex-shrink: 0;
+    height: 100% !important;
+    width: 1300px;
+}
+
+/* The Side Panel */
+#details-view-panel {
+    flex-grow: 1;
+    height: calc(100vh - 5rem); /* Height minus header */
+    background-color: rgba(15, 23, 42, 0.95); /* Slate-900 with opacity */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    animation: slideInRight 0.3s ease-out;
+    margin-top: 1px;
+
+}
+
+#details-view-panel.activeView {
+    border-color: var(--color-primary);
+    border-width: 2px;
+}
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Adjust grid when NOT virtualized inside split view */
+.split-layout #content-grid.grid {
+     grid-template-columns: repeat(3, 1fr) !important;
+}
+@media (min-width: 1600px) {
+    .split-layout #content-grid.grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+#details-play{
+    background-color: #fff;
+}
+.disabled{
+    opacity: 0.3;     /* or 0.5 */
+    filter: grayscale(50%);
+    transition: 200ms ease;
+    pointer-events: none; /* optional */
+}
+
