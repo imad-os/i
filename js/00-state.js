@@ -2,7 +2,7 @@
 // This file defines all the global state variables
 // It must be loaded first.
 
-let isTizen = false;
+let isTizen = true;//typeof webapis !== 'undefined' && webapis.avplay; // Detect Tizen OS
 let currentUsername = '';
 const defaultUserSettings = {
     favorites: [], // Array of stream_ids
@@ -12,6 +12,11 @@ const defaultUserSettings = {
     hiddenCategories: [], // Array of category_ids to hide
     pinnedCategories: [], // Array of category_ids to pin to top
     pl: 0, // Current playlist index
+    useCache: true,
+    useFileSystemCache: false,
+    autoPlayNextEpisode: true,
+    rememberLastPosition: true,
+    showAdultContent: false,
     xtreamConfig: [{
         title: 'Default Playlist',
         host: '',

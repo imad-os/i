@@ -46,3 +46,11 @@ function calcRating(item){
     }
     return rating;
 }
+
+function hideCategoryManager() {
+    $('#category-manager-modal').style.display = 'none';
+    // Restore focus to settings button
+    const btn = $$('#page-settings button')[0];
+    if(btn) btn.focus();
+    saveUserSettings(); // Persist changes
+}

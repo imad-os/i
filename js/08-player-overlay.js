@@ -84,7 +84,6 @@ Usage:
     }
   
     const cache = {};
-    let isTizen = !!(window.webapis && window.webapis.avplay);
     let streamInfo = { status: 'Idle', width: 0, height: 0, quality: '--' };
     let overlayVisible = false;
     let rafId = null;

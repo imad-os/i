@@ -171,7 +171,7 @@ async function handleApiConnect(e, isAutoLogin = false) {
 
     try {
         // Test login
-        const data = await fetchXtream({ action: 'get_vod_categories' });
+        const data = await fetchXtream({ action: 'get_user_info' });
         if (data) {
             console.log('API connection successful');
             

@@ -39,9 +39,7 @@ function toggleSearchBar(show) {
         container.classList.add('hidden');
         input.blur();
         searchState.active = false;
-        // Restore focus to header search button or main content
-        const btn = $('#header-search-button');
-        if (isVisible(btn)) btn.focus();
+
     }
 }
 
@@ -172,13 +170,6 @@ async function showCategoryManager(type) {
         showLoader(false);
     }
 
-    $('#category-manager-close').onclick = () => {
-        $('#category-manager-modal').style.display = 'none';
-        // Restore focus to settings button
-        const btn = $$('#page-settings button')[0];
-        if(btn) btn.focus();
-        saveUserSettings(); // Persist changes
-    };
 }
 
 function renderCategoryManagerList(categories, type) {

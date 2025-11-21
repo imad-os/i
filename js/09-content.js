@@ -33,7 +33,7 @@ async function loadCategories(type) {
 
         // --- FILTER & SORT CATEGORIES ---
         // 1. Filter hidden
-        let visibleCategories = categories.filter(cat => 
+        let visibleCategories = categories.filter(cat =>
             !userSettings.hiddenCategories.includes(String(cat.category_id))
         );
 
@@ -78,10 +78,18 @@ async function loadCategories(type) {
     }
 }
 
-function createCategoryCard(name, id, type, context = {}) {
+function createCategoryCard(name, id, type, context = {},) {
+    let icon = "";
+    if(id=='favorites') {
+        icon = "❤️";
+    }else if(id=='watching') {
+        icon = "▶️";
+    }else if(userSettings.pinnedCategories.includes(id)){
+        icon = "📌";
+    }
     const card = document.createElement('div');
     card.className = 'nav-item p-6 rounded-lg bg-card text-center cursor-pointer transition-all hover:bg-opacity-80';
-    card.innerHTML = `<h3 class="text-lg font-bold text-main">${name}</h3>`;
+    card.innerHTML = `<h3 class="text-lg font-bold text-main" style="display: inline-block;">${name}</h3> <span style="float: inline-end;">${icon}</span>`;
     card.onclick = () => loadContent(type, id, name, context);
     card.setAttribute('tabindex', '0'); 
     return card;
@@ -103,7 +111,7 @@ function filterContent(query) {
             (item.name || '').toLowerCase().includes(q)
         );
     }
-    
+    console.log("Filtered items count:", filtered.length);
     // 2. Determine Context and Re-render
     const activePage = $$('.page[style*="block"]')[0];
     
@@ -114,65 +122,10 @@ function filterContent(query) {
     } else if (activePage && activePage.id === 'page-content') {
         // VOD/Series: Check Virtualization
         const grid = $('#content-grid');
-        
-        // Stop any existing tasks
-        stopVirtualFlushInterval();
-        
-        if (virtualList) {
-            // -- Virtual Path --
-            // Update global data source
-            virtualListItems = filtered;
-            
-            // If filtered list is small, we could switch to DOM, but simpler to just reset virtual list
-            // Reset Map for click lookups
-            virtualListMap.clear();
-            virtualListItems.forEach(it => {
-                const key = it.stream_id || it.series_id;
-                if (key) virtualListMap.set(String(key), it);
-            });
-            
-            // Destroy old list
-            cleanupVirtualisation();
-            
-            // Reset Grid style
-            grid.className = '';
-            grid.style.height = '100%';
-            
-            // Create new list with filtered items
-            virtualList = createVirtualList({
-                container: grid,
-                itemCount: virtualListItems.length,
-                renderItem: renderVirtualItem,
-            });
-            
-            focusedVirtualIndex = 0;
-            virtualList.highlight(0);
-            
-            // Restart flush if needed
-            if (userSettings && userSettings.gpu_memory_enhancer) {
-                startVirtualFlushInterval();
-            }
-            
-        } else {
-            // -- Non-Virtual Path --
-            grid.innerHTML = '';
-            if (filtered.length === 0) {
-                grid.innerHTML = `<p class="text-alt col-span-full">No matches found.</p>`;
-                return;
-            }
-            
-            const fragment = document.createDocumentFragment();
-            filtered.forEach(item => {
-                // Note: We reuse 'virtualListType' which holds 'vod' or 'series' from loadContent
-                const card = createContentCard(item, virtualListType, virtualListContext);
-                fragment.appendChild(card);
-            });
-            grid.appendChild(fragment);
-            
-            // Focus first
-            const first = grid.querySelector('.nav-item');
-            if(first) first.focus();
-        }
+        console.log("filterContent - virtualList:", virtualList);
+        virtualListItems = filtered;
+        renderItems(virtualListItems, "vod", 1, currnetCategory,{},true);
+
     }
 }
 
@@ -233,16 +186,25 @@ function createLiveCategoryItem(name, id) {
     const btn = document.createElement('button');
     btn.className = 'nav-item w-full text-left p-3 rounded bg-card text-main hover:bg-opacity-80 mb-1 text-sm font-semibold truncate';
     btn.textContent = name;
+    btn.dataset.id = id;
     btn.onclick = () => loadLiveChannels(id, name);
     btn.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight' || e.key === 'Enter') {
-             loadLiveChannels(id, name);
+            loadLiveChannels(id, name);
         }
     });
     return btn;
 }
 
 async function loadLiveChannels(categoryId, categoryName) {
+
+    // Highlight active channel in list
+    $$('#live-categories-list .nav-item').forEach(b => b.classList.remove('bg-primary', 'text-white'));
+    const currnetCat = $('#live-categories-list .nav-item[data-id="' + categoryId + '"]');
+    currnetCat.classList.remove('bg-card');
+    currnetCat.classList.add('bg-primary', 'text-white');
+
+    
     const channelList = $('#live-channels-list');
     $('#live-channels-title').textContent = categoryName;
     channelList.innerHTML = '<div class="loader mx-auto mt-4"></div>';
@@ -466,7 +428,7 @@ function stopVirtualFlushInterval() {
  * NOTE: The virtual renderer will NOT use this HTML string — it's kept for the non-virtual path.
  */
 function getCardInnerHTML(item, type, context = {}) {
-    const poster = item.movie_image || item.icon || item.stream_icon || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
+    const poster = item.movie_image || item.icon || item.stream_icon || item.cover || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
     const name = item.name;
     const rating = calcRating(item);
     const stream_id = item.stream_id || item.series_id;
@@ -610,7 +572,7 @@ function renderVirtualItem(index, dom) {
     dom.dataset.type = type;
 
     // Image: update src only if different to avoid re-request
-    const poster = item.movie_image || item.icon || item.stream_icon || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
+    const poster = item.movie_image || item.icon || item.stream_icon|| item.cover || `https://placehold.co/200x400/1F2937/FFFFFF?text=${encodeURIComponent(item.name)}`;
     if (dom.__v.img.src !== poster) dom.__v.img.src = poster;
     dom.__v.img.alt = item.name || '';
 
@@ -752,11 +714,20 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
         items = await fetchXtream(params);
     }
 
+    renderItems(items, type, categoryId, categoryName, context);
+}
+
+
+function renderItems(items, type, categoryId, categoryName, context = {},is_earch=false) {
+    const title = categoryName;
     if (items && Array.isArray(items)) {
         $('#global-header-title').textContent = `${title} (${items.length})`;
         
         // --- SEARCH BACKUP ---
-        searchState.originalItems = items;
+        if (!is_earch){
+            searchState.originalItems = items;
+        }
+        
 
         // Clean up previous list *before* clearing grid
         if (virtualList) {
@@ -782,6 +753,7 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
         const threshold = 50; 
         // FORCE NON-VIRTUAL FOR LIVE TV (As per request, although standard loadContent is usually for grid)
         // The new Live TV UI uses initLiveTVInterface, so this path is mostly for VOD/Series.
+        console.log("renderItems", items.length, type)
         if ((type === 'vod' || type === 'series')) {
             // *** VIRTUALIZED PATH ***
             console.log(`Initializing virtual list for ${items.length} items.`);
@@ -846,8 +818,6 @@ async function loadContent(type, categoryId, categoryName = 'Content', context =
         pushToNavStack('page-content', { type, categoryId, categoryName, context });
     }
 }
-
-
 // === SERIES IMPLEMENTATION ===
 
 async function loadSeriesInfo(seriesItem) {

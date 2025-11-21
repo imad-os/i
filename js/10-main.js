@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function detectTizen() {
     try {
         if (typeof webapis !== 'undefined' && webapis.avplay) {
-            isTizen = true;
             console.log("Tizen platform detected. Using AVPlay.");
             
             document.addEventListener('tizenhwkey', (e) => {
@@ -79,7 +78,6 @@ function detectTizen() {
         }
     } catch (e) {
         console.log("Error detecting Tizen, defaulting to Web.", e);
-        isTizen = false;
     }
 }
 
@@ -112,14 +110,21 @@ function setupEventListeners() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
              filterContent(query);
-        }, 300); // 300ms debounce
+             $('#search-input').focus()
+        }, 300);
     });
     
     // Tizen virtual keyboard enter
     $('#search-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.target.blur(); // Hide keyboard
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                 filterContent(query);
+                 $('#search-input').focus()
+            }, 300);
         }
+        
     });
 
     // Settings Page
@@ -219,6 +224,13 @@ function setupKeyListeners() {
              if (e.key === 'Escape' || e.key === 'Back') {
                  clearSearch();
              }
+             if (e.key === 'Enter') {
+                e.target.blur();
+                setTimeout(() => {
+                     filterContent($("#search-input").value);
+                     toggleSearchBar(false);
+                }, 100);
+            }
              // Don't block other keys
              return;
         }
@@ -239,18 +251,15 @@ function setupKeyListeners() {
 
         if (e.key === 'Escape' || e.key === 'Back') { 
             // --- SEARCH OVERRIDE ---
-            if (searchState.active || (searchState.query && searchState.query.length > 0)) {
+            if (!$("#details-view-panel.activeView") && (searchState.active || (searchState.query && searchState.query.length > 0))) {
                 clearSearch();
-                return;
-            }
-            
-            if (activePageId === 'page-live-tv') {
+            }else if (activePageId === 'page-live-tv') {
                 stopPlayer();
                 goBack();
-                return;
-            }
-            if ($("#details-view-panel").classList.contains("activeView")) {
+            }else if ($("#details-view-panel").classList.contains("activeView")) {
                 backToMoviesList();
+            }else if ( isVisible( $("#category-manager-title") ) ) {
+                hideCategoryManager();
             } else {
                 goBack();
             }
@@ -365,10 +374,15 @@ function handleArrowNavigation(key, parentSelector = null) {
         
         if (key === 'ArrowLeft') {
             if (inChannelList) {
-                // Move from Channel to Category List (Current active item)
-                const categories = Array.from($$('#live-categories-list .nav-item'));
-                const firstCat = categories[0];
-                if (firstCat) firstCat.focus();
+                const currnetCat = $('#live-categories-list .nav-item.bg-primary');
+                console.log("Current Cat:", currnetCat);
+                if (currnetCat) {
+                    currnetCat.focus();
+                } else {
+                    // Move to first category if none active
+                    const firstCat = $('#live-categories-list .nav-item');
+                    if (firstCat) firstCat.focus();
+                }
                 return;
             }
             return;
@@ -406,8 +420,7 @@ function handleArrowNavigation(key, parentSelector = null) {
     }
     
     let focusableItems = [];
-    console.log("............. Parent Selector:", parentSelector);
-    console.log("............. activePage.id:", activePage.id);
+
     if (parentSelector) {
         focusableItems = Array.from(activePage.querySelectorAll('.nav-item, .nav-item-sm'));
         if (parentSelector === '#details-view-panel') {
@@ -532,7 +545,7 @@ function handleArrowNavigation(key, parentSelector = null) {
     });
     
     if (nextItem) {
-        nextItem.focus();
-        nextItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        nextItem.focus({ preventScroll: true });
+        nextItem.scrollIntoView({block: "nearest",inline: "nearest"});
     }
 }
