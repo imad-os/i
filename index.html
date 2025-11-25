@@ -586,21 +586,53 @@
             const rows = document.querySelectorAll('#playlist-container > div');
             let playlists = [];
             let isValid = true;
+            let errorMsg = "";
 
-            rows.forEach(row => {
+
+
+            // Validate and Parse Playlists
+            for (const row of rows) {
                 const title = row.querySelector('.playlist-title').value.trim();
-                const url = row.querySelector('.playlist-url').value.trim();
+                const urlStr = row.querySelector('.playlist-url').value.trim();
 
-                if (title && url) {
-                    playlists.push({ title, url }); // Assuming structure requested implies simplified object for this UI
-                } else if (title || url) {
+                if (title && urlStr) {
+                    try {
+                        const urlObj = new URL(urlStr);
+                        const username = urlObj.searchParams.get('username');
+                        const password = urlObj.searchParams.get('password');
+
+                        if (!username || !password) {
+                            isValid = false;
+                            errorMsg = "URL must contain 'username' and 'password' parameters.";
+                            row.querySelector('.playlist-url').classList.add('border-red-500');
+                            break;
+                        } else {
+                            row.querySelector('.playlist-url').classList.remove('border-red-500');
+                        }
+
+                        playlists.push({ 
+                            title: title, 
+                            url: urlStr,
+                            username: username, 
+                            password: password 
+                        });
+                    } catch (e) {
+                        isValid = false;
+                        errorMsg = "Invalid URL format.";
+                        row.querySelector('.playlist-url').classList.add('border-red-500');
+                        break;
+                    }
+                } else if (title || urlStr) {
                     // Only one field filled
                     isValid = false;
+                    errorMsg = "Please complete all fields.";
+                    break;
                 }
-            });
+            }
+
 
             if (!isValid) {
-                showToast("Please complete all playlist fields.", "error");
+                showToast(errorMsg || "Please check your playlist entries.", "error");
                 return;
             }
 
@@ -622,7 +654,7 @@
 
                 // Use the mandated public data path logic
                 // Using 'devices' as the collection name
-                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('devices').add({
+                await db.collection('devices').doc(deviceId).set({
                     deviceId: deviceId, // Storing DeviceID explicitly for searching later
                     playlists: base64Playlists,
                     created: firebase.firestore.FieldValue.serverTimestamp(),
@@ -658,7 +690,7 @@
             }
 
             try {
-                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('contactus').add({
+                await db.collection('contactus').add({
                     name,
                     email,
                     message,
