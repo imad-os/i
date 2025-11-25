@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speedy IPTV - IPTV Player Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1', // Indigo 500
+                        secondary: '#ec4899', // Pink 500
+                        darkbg: '#0f172a', // Slate 900
+                        carddark: '#1e293b', // Slate 800
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1; 
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .light .glass {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Animated Background Gradient */
+        .animated-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #6366f1;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-darkbg dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col font-sans">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 glass shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex-shrink-0 cursor-pointer" onclick="showPage('home')">
+                    <span class="text-2xl font-bold tracking-wider">
+                        Speedy <span class="text-primary">IPTV</span>
+                    </span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <button id="nav-btn-home" onclick="showPage('home')" class="hover:bg-primary hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all">Home</button>
+                        <button id="nav-btn-manage" onclick="showPage('manage')" class="hover:bg-primary hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all">My Playlist</button>
+                        <button id="nav-btn-activate" onclick="showPage('activate')" class="hover:bg-primary hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all">Activation</button>
+                    </div>
+                </div>
+
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-4">
+                    <button onclick="openContactModal()" class="text-sm font-medium hover:text-primary transition-colors">
+                        <i class="fas fa-envelope mr-1"></i> Contact
+                    </button>
+                    <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus:outline-none">
+                        <i class="fas fa-moon dark:hidden text-gray-800"></i>
+                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                    </button>
+                    <!-- Mobile Menu Button -->
+                    <div class="-mr-2 flex md:hidden">
+                        <button onclick="toggleMobileMenu()" class="inline-flex items-center justify-center p-2 rounded-md hover:text-white hover:bg-primary focus:outline-none">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden glass border-t border-gray-700">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <button id="mobile-nav-btn-home" onclick="showPage('home'); toggleMobileMenu()" class="text-gray-800 dark:text-gray-300 hover:bg-primary hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left">Home</button>
+                <button id="mobile-nav-btn-manage" onclick="showPage('manage'); toggleMobileMenu()" class="text-gray-800 dark:text-gray-300 hover:bg-primary hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left">My Playlist</button>
+                <button id="mobile-nav-btn-activate" onclick="showPage('activate'); toggleMobileMenu()" class="text-gray-800 dark:text-gray-300 hover:bg-primary hover:text-white block px-3 py-2 rounded-md text-base font-medium w-full text-left">Activation</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+
+        <!-- HOME PAGE -->
+        <section id="page-home" class="space-y-16 animate-fade-in">
+            <!-- Hero -->
+            <div class="text-center py-10 lg:py-20">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-6">
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                        Ultimate Streaming
+                    </span>
+                    <br />Experience
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-10">
+                    Fast, responsive, and packed with features. The best way to manage your content on Smart TVs and Mobile devices.
+                </p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="showPage('activate')" class="bg-primary hover:bg-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg transform hover:scale-105 transition-all">
+                        Start Free Trial
+                    </button>
+                    <button onclick="showPage('manage')" class="glass hover:bg-gray-200 dark:hover:bg-gray-800 px-8 py-3 rounded-full font-bold border border-gray-300 dark:border-gray-600 transition-all">
+                        Manage Playlist
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass p-6 rounded-2xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4 text-primary group-hover:scale-110 transition-transform">
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Blazing Fast</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Optimized for speed on LG, Samsung, and Android devices.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="glass p-6 rounded-2xl hover:shadow-2xl hover:shadow-secondary/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 bg-secondary/20 rounded-lg flex items-center justify-center mb-4 text-secondary group-hover:scale-110 transition-transform">
+                        <i class="fas fa-list-ul text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Multi-Playlist</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Manage multiple M3U playlists and sources in one place.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="glass p-6 rounded-2xl hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-4 text-green-500 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-mobile-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Fully Responsive</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Enjoy a seamless experience on phones, tablets, and TVs.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="glass p-6 rounded-2xl hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center mb-4 text-yellow-500 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-heart text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Favorites & Sort</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Organize your content, search easily, and mark favorites.</p>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="py-10">
+                <h2 class="text-3xl font-bold text-center mb-10">Simple Pricing</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Free -->
+                    <div class="glass p-8 rounded-2xl text-center border-t-4 border-gray-400 relative">
+                        <h3 class="text-2xl font-bold mb-4">Trial</h3>
+                        <div class="text-4xl font-extrabold mb-2">Free</div>
+                        <p class="text-gray-500 mb-6">30 Days</p>
+                        <ul class="text-left space-y-3 mb-8 text-sm">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Full Features</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 1 Device</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Ad Supported</li>
+                        </ul>
+                        <button onclick="showPage('activate')" class="w-full py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-colors">Try Now</button>
+                    </div>
+                    <!-- 1 Year -->
+                    <div class="glass p-8 rounded-2xl text-center border-t-4 border-primary transform scale-105 shadow-2xl relative z-10 bg-white dark:bg-carddark">
+                        <div class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>
+                        <h3 class="text-2xl font-bold mb-4">Yearly</h3>
+                        <div class="text-4xl font-extrabold mb-2 text-primary">$5</div>
+                        <p class="text-gray-500 mb-6">Per Year</p>
+                        <ul class="text-left space-y-3 mb-8 text-sm">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> No Ads</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Priority Support</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Multi-Playlist</li>
+                        </ul>
+                        <button onclick="showPage('activate')" class="w-full py-2 rounded-lg bg-primary hover:bg-indigo-600 text-white font-semibold transition-colors">Choose Yearly</button>
+                    </div>
+                    <!-- Lifetime -->
+                    <div class="glass p-8 rounded-2xl text-center border-t-4 border-secondary">
+                        <h3 class="text-2xl font-bold mb-4">Lifetime</h3>
+                        <div class="text-4xl font-extrabold mb-2 text-secondary">$15</div>
+                        <p class="text-gray-500 mb-6">One-time Payment</p>
+                        <ul class="text-left space-y-3 mb-8 text-sm">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Forever Access</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Up to 5 Devices</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> VIP Features</li>
+                        </ul>
+                        <button onclick="showPage('activate')" class="w-full py-2 rounded-lg bg-secondary hover:bg-pink-600 text-white font-semibold transition-colors">Get Lifetime</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supported Devices -->
+            <div class="text-center py-8">
+                <p class="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-4">Supported Platforms</p>
+                <div class="flex justify-center gap-8 text-3xl text-gray-400">
+                    <i class="fab fa-android hover:text-green-500 transition-colors" title="Android"></i>
+                    <i class="fab fa-apple hover:text-white transition-colors" title="iOS"></i>
+                    <span class="hover:text-blue-500 transition-colors font-bold text-xl flex items-center">Samsung</span>
+                    <span class="hover:text-pink-500 transition-colors font-bold text-xl flex items-center">LG</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- MANAGE PLAYLIST PAGE -->
+        <section id="page-manage" class="hidden max-w-3xl mx-auto animate-slide-up">
+            <div class="glass rounded-2xl p-6 md:p-10 shadow-2xl">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                        <i class="fas fa-sliders-h text-primary"></i> Manage Playlists
+                    </h2>
+                    <div id="status-indicator" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-500">Connected</div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Device ID / MAC Address</label>
+                    <div class="relative">
+                        <input type="text" id="device-id-input" placeholder="ca4ad45ad" 
+                            class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-3 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                        <i class="fas fa-tv absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">This ID is usually found in the app settings.</p>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 my-6"></div>
+
+                <div id="playlist-container" class="space-y-4">
+                    <!-- Dynamic Playlist Rows will go here -->
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                    <button onclick="addPlaylistRow()" class="flex-1 py-3 px-4 border border-dashed border-gray-500 rounded-lg text-gray-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i> Add Another Playlist
+                    </button>
+                    <button onclick="savePlaylists()" id="save-btn" class="flex-1 bg-primary hover:bg-indigo-600 text-white py-3 px-4 rounded-lg font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="mt-10 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <h4 class="text-red-500 font-bold text-sm mb-1"><i class="fas fa-exclamation-triangle mr-2"></i> Disclaimer</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        This application is a media player only. <strong>We do not provide, host, or sell any media content, playlists, or streams.</strong> Users must provide their own content. We are not responsible for the misuse of this software or copyright infringement.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIVATION PAGE -->
+        <section id="page-activate" class="hidden max-w-xl mx-auto animate-slide-up">
+            <div class="glass rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
+                <!-- Decorative background blob -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                <h2 class="text-3xl font-bold mb-2">Activate Device</h2>
+                <p class="text-gray-500 mb-8">Enter your MAC ID to start your subscription.</p>
+
+                <div class="mb-6 text-left">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">MAC ID</label>
+                    <input type="text" id="activation-mac" placeholder="00:1A:79:..." 
+                        class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all font-mono uppercase">
+                </div>
+
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="terms" class="w-4 h-4 text-primary bg-gray-800 border-gray-600 rounded focus:ring-primary">
+                    <label for="terms" class="ml-2 text-sm text-gray-500">I agree to the terms and conditions</label>
+                </div>
+
+                <button onclick="mockActivation()" class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl hover:opacity-90 transition-all">
+                    Next Step <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+                
+                <p class="mt-6 text-xs text-gray-400">
+                    Need help finding your MAC ID? Check the 'Settings' inside the app on your TV.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass border-t border-gray-200 dark:border-gray-800 py-8 mt-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-500 text-sm">© 2023 Speedy IPTV. All rights reserved.</p>
+            <div class="mt-2 space-x-4 text-sm text-gray-400">
+                <a href="#" class="hover:text-primary">Privacy Policy</a>
+                <a href="#" class="hover:text-primary">Terms of Service</a>
+                <a href="#" class="hover:text-primary">DMCA</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Contact Modal -->
+    <div id="contact-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeContactModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-700">
+                <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">Contact Us</h3>
+                            <div class="mt-4 space-y-4">
+                                <input type="text" id="contact-name" placeholder="Your Name" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-3 text-sm focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+                                <input type="email" id="contact-email" placeholder="Your Email" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-3 text-sm focus:ring-2 focus:ring-primary text-gray-900 dark:text-white">
+                                <textarea id="contact-message" rows="3" placeholder="Message" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded p-3 text-sm focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="submitContact()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Send
+                    </button>
+                    <button type="button" onclick="closeContactModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyClgzoMBEKizx-r7abMvAmLgGpk_p748IU",
+            authDomain: "iptv-8b60c.firebaseapp.com",
+            projectId: "iptv-8b60c",
+            storageBucket: "iptv-8b60c.firebasestorage.app",
+            messagingSenderId: "259048691910",
+            appId: "1:259048691910:web:b57f9eeda5546ce4d8dfc7"
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // State
+        let currentUser = null;
+
+        // Auth & Init
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
+
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        currentUser = user;
+                        console.log("Authenticated as", user.uid);
+                        document.getElementById('status-indicator').classList.remove('hidden');
+                    }
+                });
+
+                // Check URL for #device parameter
+                handleUrlParams();
+                
+                // Initialize Form
+                addPlaylistRow(); // Add first empty row
+
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showToast("Authentication failed. Please refresh.", "error");
+            }
+        }
+
+        // --- UI Logic ---
+
+        function showPage(pageId) {
+            // Hide all pages
+            ['page-home', 'page-manage', 'page-activate'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            // Show selected page
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            
+            // Update Menu Highlighting
+            updateActiveNav(pageId);
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function updateActiveNav(activePageId) {
+            const pages = ['home', 'manage', 'activate'];
+            
+            pages.forEach(page => {
+                const desktopBtn = document.getElementById(`nav-btn-${page}`);
+                const mobileBtn = document.getElementById(`mobile-nav-btn-${page}`);
+                
+                // Base classes for inactive state
+                const inactiveClassesDesktop = ['hover:bg-primary', 'hover:text-white'];
+                const activeClasses = ['bg-primary', 'text-white'];
+                
+                // Mobile specific text colors to handle separately because active state overrides them
+                const mobileTextColors = ['text-gray-800', 'dark:text-gray-300'];
+
+                if (page === activePageId) {
+                    // Active State
+                    if(desktopBtn) desktopBtn.classList.add(...activeClasses);
+                    if(mobileBtn) {
+                        mobileBtn.classList.add(...activeClasses);
+                        mobileBtn.classList.remove(...mobileTextColors);
+                    }
+                } else {
+                    // Inactive State
+                    if(desktopBtn) desktopBtn.classList.remove(...activeClasses);
+                    if(mobileBtn) {
+                        mobileBtn.classList.remove(...activeClasses);
+                        mobileBtn.classList.add(...mobileTextColors);
+                    }
+                }
+            });
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        function openContactModal() {
+            document.getElementById('contact-modal').classList.remove('hidden');
+        }
+
+        function closeContactModal() {
+            document.getElementById('contact-modal').classList.add('hidden');
+            // Reset fields
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-email').value = '';
+            document.getElementById('contact-message').value = '';
+        }
+
+        function handleUrlParams() {
+            const hash = window.location.hash;
+            if (hash) {
+                const params = new URLSearchParams(hash.substring(1)); // remove #
+                const deviceId = params.get('device');
+                
+                if (deviceId) {
+                    // Pre-fill input
+                    document.getElementById('device-id-input').value = deviceId;
+                    document.getElementById('device-id-input').readOnly = true; // Optional: make read only if from URL
+                    document.getElementById('device-id-input').classList.add('opacity-70', 'cursor-not-allowed');
+                    
+                    // Switch to manage page
+                    showPage('manage');
+                }
+            }
+        }
+
+        // --- Playlist Management Logic ---
+
+        function addPlaylistRow() {
+            const container = document.getElementById('playlist-container');
+            const rowId = 'row-' + Date.now();
+            
+            const div = document.createElement('div');
+            div.className = "group glass p-4 rounded-lg animate-fade-in relative transition-all border border-gray-200 dark:border-gray-700";
+            div.id = rowId;
+            
+            div.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Playlist Title</label>
+                        <input type="text" class="playlist-title w-full bg-transparent border-b border-gray-300 dark:border-gray-600 py-2 focus:outline-none focus:border-primary transition-colors text-sm" placeholder="e.g. My Sports">
+                    </div>
+                    <div class="md:col-span-7">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Playlist URL / M3U Link</label>
+                        <input type="text" class="playlist-url w-full bg-transparent border-b border-gray-300 dark:border-gray-600 py-2 focus:outline-none focus:border-primary transition-colors text-sm font-mono" placeholder="http://server.com/get.php?username=...">
+                    </div>
+                    <div class="md:col-span-1 flex items-end justify-center md:justify-end pb-2">
+                         <button onclick="removeRow('${rowId}')" class="text-red-400 hover:text-red-600 transition-colors p-2" title="Remove">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(div);
+        }
+
+        function removeRow(rowId) {
+            const rows = document.getElementById('playlist-container').children;
+            if (rows.length > 1) {
+                document.getElementById(rowId).remove();
+            } else {
+                showToast("You must have at least one playlist.", "error");
+            }
+        }
+
+        async function savePlaylists() {
+            if (!currentUser) {
+                showToast("Please wait for initialization...", "error");
+                return;
+            }
+
+            const deviceId = document.getElementById('device-id-input').value.trim();
+            if (!deviceId) {
+                showToast("Device ID is required!", "error");
+                document.getElementById('device-id-input').focus();
+                return;
+            }
+
+            const rows = document.querySelectorAll('#playlist-container > div');
+            let playlists = [];
+            let isValid = true;
+
+            rows.forEach(row => {
+                const title = row.querySelector('.playlist-title').value.trim();
+                const url = row.querySelector('.playlist-url').value.trim();
+
+                if (title && url) {
+                    playlists.push({ title, url }); // Assuming structure requested implies simplified object for this UI
+                } else if (title || url) {
+                    // Only one field filled
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                showToast("Please complete all playlist fields.", "error");
+                return;
+            }
+
+            if (playlists.length === 0) {
+                showToast("Add at least one playlist.", "error");
+                return;
+            }
+
+            // UI Loading state
+            const btn = document.getElementById('save-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<div class="loader"></div> Saving...';
+            btn.disabled = true;
+
+            try {
+                // Base64 Encode the JSON string of playlists
+                const jsonString = JSON.stringify(playlists);
+                const base64Playlists = btoa(jsonString);
+
+                // Use the mandated public data path logic
+                // Using 'devices' as the collection name
+                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('devices').add({
+                    deviceId: deviceId, // Storing DeviceID explicitly for searching later
+                    playlists: base64Playlists,
+                    created: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: currentUser.uid
+                });
+
+                showToast("Playlists saved successfully!", "success");
+                
+                // Optional: Clear form or redirect
+                // showPage('home'); 
+
+            } catch (error) {
+                console.error("Save Error:", error);
+                showToast("Failed to save. Try again.", "error");
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        // --- Contact & Activation Logic ---
+
+        async function submitContact() {
+            if (!currentUser) return;
+
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const message = document.getElementById('contact-message').value;
+
+            if (!name || !email || !message) {
+                showToast("Please fill all fields.", "error");
+                return;
+            }
+
+            try {
+                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('contactus').add({
+                    name,
+                    email,
+                    message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast("Message sent!", "success");
+                closeContactModal();
+            } catch (e) {
+                console.error(e);
+                showToast("Error sending message.", "error");
+            }
+        }
+
+        function mockActivation() {
+            const mac = document.getElementById('activation-mac').value;
+            if(mac.length < 5) {
+                showToast("Invalid MAC Address", "error");
+                return;
+            }
+            showToast("Activation Request Sent (Demo)", "success");
+        }
+
+        // --- Utilities ---
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `${colors} text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+
+            // Remove after 3s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Boot ---
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
