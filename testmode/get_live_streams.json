@@ -10,8 +10,8 @@
       "category_id": "1",
       "custom_sid": "",
       "tv_archive": 0,
-      "direct_source": "",
-      "tv_archive_duration": 0
+      "tv_archive_duration": 0,
+      "direct_source" : "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
     },
     {
       "num": 2,
@@ -24,7 +24,7 @@
       "category_id": "2",
       "custom_sid": "",
       "tv_archive": 0,
-      "direct_source": "",
-      "tv_archive_duration": 0
+      "tv_archive_duration": 0,
+      "direct_source" : "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
     }
   ]
