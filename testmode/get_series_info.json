@@ -1,0 +1,50 @@
+{
+    "seasons": [
+      {
+        "air_date": "2024-01-01",
+        "episode_count": 2,
+        "id": 1,
+        "name": "Season 1",
+        "overview": "The first season of test clips.",
+        "season_number": 1,
+        "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg",
+        "cover_big": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg"
+      }
+    ],
+    "episodes": {
+      "1": [
+        {
+          "id": 40001,
+          "episode_num": 1,
+          "title": "Episode 1: The Bunny",
+          "container_extension": "mp4",
+          "info": {
+            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg",
+            "plot": "A giant rabbit takes revenge.",
+            "duration": "00:10:00",
+            "bitrate": 3000
+          },
+          "custom_sid": "",
+          "added": "1690000000",
+          "season": 1,
+          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        },
+        {
+          "id": 40002,
+          "episode_num": 2,
+          "title": "Episode 2: The Elephant Dream",
+          "container_extension": "mp4",
+          "info": {
+            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
+            "plot": "The world's first open movie.",
+            "duration": "00:11:00",
+            "bitrate": 3000
+          },
+          "custom_sid": "",
+          "added": "1690000000",
+          "season": 1,
+          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        }
+      ]
+    }
+  }

@@ -1,0 +1,26 @@
+{
+    "user_info": {
+      "username": "testuser",
+      "password": "testpassword",
+      "message": "Hello World",
+      "auth": 1,
+      "status": "Active",
+      "exp_date": "1999999999",
+      "is_trial": "0",
+      "active_cons": "0",
+      "created_at": "1690000000",
+      "max_connections": "5",
+      "allowed_output_formats": ["m3u8", "ts", "rtmp"]
+    },
+    "server_info": {
+      "url": "your-github-username.github.io",
+      "port": "443",
+      "https_port": "443",
+      "server_protocol": "https",
+      "rtmp_port": "8880",
+      "timezone": "Europe/London",
+      "timestamp_now": 1700000000,
+      "time_now": "2025-01-01 12:00:00",
+      "process": true
+    }
+  }

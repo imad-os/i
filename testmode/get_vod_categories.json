@@ -1,0 +1,12 @@
+[
+    {
+      "category_id": "100",
+      "category_name": "4K Movies",
+      "parent_id": 0
+    },
+    {
+      "category_id": "101",
+      "category_name": "Animation",
+      "parent_id": 0
+    }
+  ]

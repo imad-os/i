@@ -1,0 +1,16 @@
+[
+    {
+      "num": 1,
+      "name": "Blender Open Projects",
+      "series_id": 30001,
+      "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Blender_logo_no_text.svg/1024px-Blender_logo_no_text.svg.png",
+      "plot": "A collection of open source movies from the Blender Foundation used for testing.",
+      "cast": "Blender Team",
+      "director": "Ton Roosendaal",
+      "genre": "Animation",
+      "releaseDate": "2024-01-01",
+      "last_modified": "1690000000",
+      "rating": "10",
+      "category_id": "200"
+    }
+  ]
