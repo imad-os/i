@@ -658,8 +658,10 @@
                     deviceId: deviceId, // Storing DeviceID explicitly for searching later
                     playlists: base64Playlists,
                     created: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedBy: currentUser.uid
+                    updatedBy: currentUser.uid,
+                    status: "filled" 
                 });
+
 
                 showToast("Playlists saved successfully!", "success");
                 
