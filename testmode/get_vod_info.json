@@ -1,0 +1,26 @@
+{
+    "info": {
+      "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg",
+      "genre": "Animation",
+      "plot": "A giant rabbit with a heart bigger than himself, watches two playful butterflies, but three rodents interrupt his day.",
+      "cast": "Bunny, Rodents, Butterfly",
+      "rating": "9.0",
+      "director": "Sacha Goedegebure",
+      "releasedate": "2008-04-10",
+      "tmdb_id": "10378",
+      "duration": "00:10:00",
+      "youtube_trailer": "YE7VzlLtp-4",
+      "backdrop_path": [
+        "https://upload.wikimedia.org/wikipedia/commons/c/c5/Big_buck_bunny_poster_big.jpg"
+      ]
+    },
+    "movie_data": {
+      "stream_id": 20001,
+      "name": "Big Buck Bunny",
+      "added": "1690000000",
+      "category_id": "101",
+      "container_extension": "mp4",
+      "custom_sid": "",
+      "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    }
+  }
