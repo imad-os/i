@@ -8,5 +8,15 @@
       "category_id": "2",
       "category_name": "Sports",
       "parent_id": 0
+    },
+    {
+      "category_id": "3",
+      "category_name": "Entertainments",
+      "parent_id": 0
+    },
+    {
+      "category_id": "4",
+      "category_name": "Natural",
+      "parent_id": 0
     }
   ]

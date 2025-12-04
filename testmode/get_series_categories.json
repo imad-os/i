@@ -1,7 +1,22 @@
 [
-    {
-      "category_id": "200",
-      "category_name": "Test Series",
-      "parent_id": 0
-    }
-  ]
+  {
+    "category_id": "100",
+    "category_name": "4K Movies",
+    "parent_id": 0
+  },
+  {
+    "category_id": "101",
+    "category_name": "Animation",
+    "parent_id": 0
+  },
+  {
+    "category_id": "202",
+    "category_name": "Horror",
+    "parent_id": 0
+  },
+  {
+    "category_id": "203",
+    "category_name": "HoRomancerror",
+    "parent_id": 0
+  }
+]
