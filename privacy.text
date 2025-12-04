@@ -1,0 +1,65 @@
+Privacy Policy for Speedy IPTV
+
+Last Updated: December 04, 2025
+
+1. Introduction
+
+Welcome to Speedy IPTV ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how our application collects, uses, and safeguards information when you use our application on your Smart TV (Tizen/Samsung platform).
+
+2. Information We Collect
+
+We collect minimal information necessary to ensure the technical functionality of the application. We do not collect personal information such as your name, email address, phone number, or physical location unless you voluntarily provide it for support purposes.
+
+A. Technical Device Information
+
+When you use the application, we automatically collect specific technical details from your device to authenticate your playlist and ensure compatibility. This includes:
+
+Device Model Name: (e.g., Samsung QE55Q70)
+
+Device Unique Identifier (DUID/Tizen ID): A unique string of characters used to identify your specific TV.
+
+Firmware Version: The version of the operating system running on your TV.
+
+B. Usage Data
+
+We may collect anonymous usage statistics to help us improve the application, such as:
+
+App launch frequency.
+
+Crash reports and error logs.
+
+3. How We Use Your Information
+
+The information we collect is used solely for the following purposes:
+
+Playlist Authentication: We use your Device ID (DUID) to link your specific device to your IPTV playlist configuration. This ensures that you do not need to re-enter your details every time you launch the app.
+
+Technical Support & Compatibility: We use your TV model and firmware version to deliver the correct video player format and UI layout optimized for your specific hardware.
+
+App Improvement: Anonymous crash logs help us fix bugs and improve performance.
+
+4. Data Sharing and Disclosure
+
+We do not sell, trade, or rent your device identification data to third parties. We do not use your data for advertising or marketing purposes.
+
+We may disclose data only if required by law or to protect our rights.
+
+5. Data Storage and Security
+
+Your playlist configuration and device ID are stored securely. We implement industry-standard security measures to protect your data from unauthorized access or disclosure. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
+
+6. Children's Privacy
+
+Our application does not knowingly collect personal information from children under the age of 13.
+
+7. Changes to This Privacy Policy
+
+We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.
+
+8. Contact Us
+
+If you have any questions about this Privacy Policy, please contact us at:
+
+Email: support@geekspro.us
+
+Website: http://i.geekspro.us/
