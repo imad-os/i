@@ -44,6 +44,38 @@
           "added": "1690000000",
           "season": 1,
           "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        },
+        {
+          "id": 40003,
+          "episode_num": 3,
+          "title": "Episode 3: The Elephant Dream 3",
+          "container_extension": "mp4",
+          "info": {
+            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
+            "plot": "The world's first open movie.",
+            "duration": "00:11:00",
+            "bitrate": 3000
+          },
+          "custom_sid": "",
+          "added": "1690000000",
+          "season": 1,
+          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        },
+        {
+          "id": 40004,
+          "episode_num": 4,
+          "title": "Episode 4: The Elephant Dream 4",
+          "container_extension": "mp4",
+          "info": {
+            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
+            "plot": "The world's first open movie.",
+            "duration": "00:11:00",
+            "bitrate": 3000
+          },
+          "custom_sid": "",
+          "added": "1690000000",
+          "season": 1,
+          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
         }
       ]
     }
