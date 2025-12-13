@@ -586,7 +586,7 @@
 
                         playlists.push({ 
                             title, 
-                            url: urlStr,
+                            url: urlObj.origin,
                             username: username || null, 
                             password: password || null,
                             skipValidation
@@ -641,7 +641,7 @@
                 // If exists, proceed to update
                 btn.innerHTML = '<div class="loader mr-2"></div> Saving...';
                 
-                const jsonString = JSON.stringify(playlists);
+                const jsonString = JSON.stringify({xtreamConfig:playlists});
                 const base64Playlists = btoa(jsonString);
                 
                 await deviceRef.update({
