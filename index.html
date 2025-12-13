@@ -675,7 +675,8 @@
                 await deviceRef.update({
                     playlists: base64Playlists,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedBy: currentUser.uid
+                    updatedBy: currentUser.uid,
+                    status:"filled",
                 });
 
                 showToast("Playlists saved successfully!", "success");
