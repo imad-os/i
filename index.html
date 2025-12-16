@@ -641,13 +641,16 @@
 
                 // If exists, proceed to update
                 btn.innerHTML = '<div class="loader mr-2"></div> Saving...';
-                                
-                await deviceRef.update({
-                    playlists: {xtreamConfig:playlists},
+
+                const jsonString = JSON.stringify({xtreamConfig:playlists});
+                const base64Playlists = btoa(jsonString);
+                const userSettings = {
+                    playlists: ["v2_","v3_"].includes(deviceId.slice(0,3)) ? {xtreamConfig:playlists}:base64Playlists,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedBy: currentUser.uid,
                     //status:"filled", keep it open to updates
-                });
+                }
+                await deviceRef.update(userSettings);
 
                 showToast("Playlists saved successfully!", "success");
 
