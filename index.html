@@ -300,7 +300,7 @@
     <footer class="glass border-t border-gray-200 dark:border-gray-800 py-8 mt-8">
         <div class="container mx-auto px-4 text-center">
             <p class="text-gray-500 text-sm">© 2026 Speedy IPTV. All rights reserved.</p>
-            <p class="text-gray-500 text-sm">v0.1.4</p>
+            <p class="text-gray-500 text-sm">v0.2.4</p>
             <div class="mt-2 space-x-4 text-sm text-gray-400">
                 <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
                 <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
@@ -643,9 +643,8 @@
                 btn.innerHTML = '<div class="loader mr-2"></div> Saving...';
 
                 const jsonString = JSON.stringify({xtreamConfig:playlists});
-                const base64Playlists = btoa(jsonString);
                 const userSettings = {
-                    playlists: ["v2_","v3_"].includes(deviceId.slice(0,3)) ? {xtreamConfig:playlists}:base64Playlists,
+                    playlists: {xtreamConfig:playlists},
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedBy: currentUser.uid,
                     //status:"filled", keep it open to updates
