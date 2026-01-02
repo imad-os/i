@@ -587,7 +587,7 @@
 
                         playlists.push({ 
                             title, 
-                            host: urlObj.origin,
+                            host: urlObj.origin + urlObj.pathname,
                             username: username || null, 
                             password: password || null,
                             skipValidation
