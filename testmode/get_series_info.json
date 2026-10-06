@@ -1,82 +1,66 @@
 {
-    "seasons": [
-      {
-        "air_date": "2024-01-01",
-        "episode_count": 2,
-        "id": 1,
-        "name": "Season 1",
-        "overview": "The first season of test clips.",
-        "season_number": 1,
-        "cover": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg",
-        "cover_big": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg"
-      }
-    ],
-    "episodes": {
-      "1": [
-        {
-          "id": 40001,
-          "episode_num": 1,
-          "title": "Episode 1: The Bunny",
-          "container_extension": "mp4",
-          "info": {
-            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/800px-Big_buck_bunny_poster_big.jpg",
-            "plot": "A giant rabbit takes revenge.",
-            "duration": "00:10:00",
-            "bitrate": 3000
-          },
-          "custom_sid": "",
-          "added": "1690000000",
-          "season": 1,
-          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-        },
-        {
-          "id": 40002,
-          "episode_num": 2,
-          "title": "Episode 2: The Elephant Dream",
-          "container_extension": "mp4",
-          "info": {
-            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
-            "plot": "The world's first open movie.",
-            "duration": "00:11:00",
-            "bitrate": 3000
-          },
-          "custom_sid": "",
-          "added": "1690000000",
-          "season": 1,
-          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-        },
-        {
-          "id": 40003,
-          "episode_num": 3,
-          "title": "Episode 3: The Elephant Dream 3",
-          "container_extension": "mp4",
-          "info": {
-            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
-            "plot": "The world's first open movie.",
-            "duration": "00:11:00",
-            "bitrate": 3000
-          },
-          "custom_sid": "",
-          "added": "1690000000",
-          "season": 1,
-          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-        },
-        {
-          "id": 40004,
-          "episode_num": 4,
-          "title": "Episode 4: The Elephant Dream 4",
-          "container_extension": "mp4",
-          "info": {
-            "movie_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sintel_poster.jpg/800px-Sintel_poster.jpg",
-            "plot": "The world's first open movie.",
-            "duration": "00:11:00",
-            "bitrate": 3000
-          },
-          "custom_sid": "",
-          "added": "1690000000",
-          "season": 1,
-          "direct_source": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-        }
-      ]
+  "seasons": [
+    {
+      "air_date": "2013-01-01",
+      "episode_count": 3,
+      "id": 1,
+      "name": "Season 1",
+      "overview": "Caminandes, the Blender Foundation's open (CC-BY) animated shorts about Koro the llama.",
+      "season_number": 1,
+      "cover": "https://archive.org/services/img/Caminandes1LlamaDrama",
+      "cover_big": "https://archive.org/services/img/Caminandes1LlamaDrama"
     }
+  ],
+  "episodes": {
+    "1": [
+      {
+        "id": 40001,
+        "episode_num": 1,
+        "title": "Episode 1: Llama Drama",
+        "container_extension": "mp4",
+        "info": {
+          "movie_image": "https://archive.org/services/img/Caminandes1LlamaDrama",
+          "plot": "Koro the llama tries to cross a road in Patagonia, but a fence stands in his way.",
+          "duration": "00:01:30",
+          "bitrate": 3000
+        },
+        "custom_sid": "",
+        "added": "1700000000",
+        "season": 1,
+        "direct_source": "https://archive.org/download/Caminandes1LlamaDrama/01_llama_drama_1080p.mp4"
+      },
+      {
+        "id": 40002,
+        "episode_num": 2,
+        "title": "Episode 2: Gran Dillama",
+        "container_extension": "mp4",
+        "info": {
+          "movie_image": "https://archive.org/services/img/Caminandes2GranDillama",
+          "plot": "Koro is hungry and the grass is always greener on the other side of the fence.",
+          "duration": "00:02:26",
+          "bitrate": 3000
+        },
+        "custom_sid": "",
+        "added": "1700000000",
+        "season": 1,
+        "direct_source": "https://archive.org/download/Caminandes2GranDillama/02_gran_dillama_1080p.mp4"
+      },
+      {
+        "id": 40003,
+        "episode_num": 3,
+        "title": "Episode 3: Llamigos",
+        "container_extension": "mp4",
+        "info": {
+          "movie_image": "https://archive.org/services/img/CaminandesLlamigos",
+          "plot": "Winter has come to Patagonia and Koro meets Oti, a pesky penguin.",
+          "duration": "00:02:30",
+          "bitrate": 3000
+        },
+        "custom_sid": "",
+        "added": "1700000000",
+        "season": 1,
+        "direct_source": "https://archive.org/download/CaminandesLlamigos/Caminandes_%20Llamigos-1080p.mp4"
+      }
+    ]
   }
+}

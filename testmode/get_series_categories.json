@@ -1,22 +1,17 @@
 [
   {
-    "category_id": "100",
-    "category_name": "4K Movies",
+    "category_id": "301",
+    "category_name": "Animated Shorts",
     "parent_id": 0
   },
   {
-    "category_id": "101",
-    "category_name": "Animation",
+    "category_id": "302",
+    "category_name": "Classic Comedy",
     "parent_id": 0
   },
   {
-    "category_id": "202",
-    "category_name": "Horror",
-    "parent_id": 0
-  },
-  {
-    "category_id": "203",
-    "category_name": "HoRomancerror",
+    "category_id": "303",
+    "category_name": "Documentary",
     "parent_id": 0
   }
 ]

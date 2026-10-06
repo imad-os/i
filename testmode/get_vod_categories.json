@@ -1,22 +1,32 @@
 [
-    {
-      "category_id": "100",
-      "category_name": "4K Movies",
-      "parent_id": 0
-    },
-    {
-      "category_id": "101",
-      "category_name": "Animation",
-      "parent_id": 0
-    },
-    {
-      "category_id": "202",
-      "category_name": "Horror",
-      "parent_id": 0
-    },
-    {
-      "category_id": "203",
-      "category_name": "HoRomancerror",
-      "parent_id": 0
-    }
-  ]
+  {
+    "category_id": "100",
+    "category_name": "Sci-Fi & Action",
+    "parent_id": 0
+  },
+  {
+    "category_id": "101",
+    "category_name": "Animation",
+    "parent_id": 0
+  },
+  {
+    "category_id": "102",
+    "category_name": "Classics",
+    "parent_id": 0
+  },
+  {
+    "category_id": "104",
+    "category_name": "HLS Test Streams",
+    "parent_id": 0
+  },
+  {
+    "category_id": "202",
+    "category_name": "Horror",
+    "parent_id": 0
+  },
+  {
+    "category_id": "203",
+    "category_name": "Romance & Comedy",
+    "parent_id": 0
+  }
+]
